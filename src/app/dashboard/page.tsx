@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider';
 import StatusCard from '@/components/StatusCard';
 import VoiceInputFlow from '@/components/VoiceInputFlow';
 import InviteModal from '@/components/InviteModal';
-import SettingsModal from '@/components/SettingsModal';
+
 import useSaveStatus, { ToastContainer } from '@/hooks/useSaveStatus';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { subscribeToTeamStatuses, ConnectionStatus } from '@/lib/realtime';
@@ -469,11 +469,7 @@ export default function DashboardPage() {
                 />
             )}
 
-            {/* Settings Modal */}
-            <SettingsModal
-                isOpen={showSettingsModal}
-                onClose={() => setShowSettingsModal(false)}
-            />
+
 
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>
