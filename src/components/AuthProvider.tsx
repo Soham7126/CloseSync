@@ -64,30 +64,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        // Get initial session
+        // Get initial session - set loading false as soon as we know auth status
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
+            setIsLoading(false); // Set loading false IMMEDIATELY after getting auth status
+
+            // Fetch profile in background (non-blocking)
             if (session?.user) {
                 fetchProfile(session.user.id);
             }
-            setIsLoading(false);
         });
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
+            (event, session) => {
                 setSession(session);
                 setUser(session?.user ?? null);
+                setIsLoading(false);
 
                 if (session?.user) {
-                    await fetchProfile(session.user.id);
+                    // Fetch profile in background (non-blocking)
+                    fetchProfile(session.user.id);
                 } else {
                     setProfile(null);
                     setTeam(null);
                 }
-
-                setIsLoading(false);
             }
         );
 

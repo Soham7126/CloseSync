@@ -95,11 +95,33 @@ export function createSupabaseBrowserClient() {
 }
 
 // Server client (for server components, API routes)
-export function createSupabaseServerClient() {
+export async function createSupabaseServerClient() {
     const supabaseUrl = getSupabaseUrl();
     const supabaseAnonKey = getSupabaseAnonKey();
 
-    return createClient<Database>(supabaseUrl, supabaseAnonKey);
+    // Dynamic import to avoid issues during build
+    const { cookies } = await import('next/headers');
+    const { createServerClient } = await import('@supabase/ssr');
+
+    const cookieStore = await cookies();
+
+    return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+            getAll() {
+                return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+                try {
+                    cookiesToSet.forEach(({ name, value, options }) => {
+                        cookieStore.set(name, value, options);
+                    });
+                } catch {
+                    // The `set` method was called from a Server Component
+                    // This can be ignored if you have middleware refreshing sessions
+                }
+            },
+        },
+    });
 }
 
 // Admin client (for server-side operations that bypass RLS)
