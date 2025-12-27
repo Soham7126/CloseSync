@@ -143,6 +143,7 @@ export default function QuickSyncModal({
     title: string;
     duration: number;
     notes: string;
+    customStartTime?: string;
   }) => {
     if (!selectedSlot) return;
 
@@ -150,13 +151,16 @@ export default function QuickSyncModal({
     setError(null);
 
     try {
+      // Use custom start time if provided, otherwise use the slot start
+      const startTime = data.customStartTime || selectedSlot.start;
+
       const response = await fetch('/api/meetings/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           participantId: targetUser.id,
           title: data.title,
-          startTime: selectedSlot.start,
+          startTime: startTime,
           duration: data.duration,
           notes: data.notes,
         }),
@@ -223,13 +227,16 @@ export default function QuickSyncModal({
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {
-      return `${minutes}min`;
+      return `${minutes} min`;
     } else if (minutes === 60) {
-      return '1hr';
+      return '1 hour';
     } else {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
-      return mins > 0 ? `${hours}hr ${mins}min` : `${hours}hr`;
+      if (mins > 0) {
+        return `${hours} hour${hours > 1 ? 's' : ''} ${mins} min`;
+      }
+      return `${hours} hours`;
     }
   };
 
@@ -348,43 +355,57 @@ export default function QuickSyncModal({
 
               {/* Slots List */}
               {!loading && slots.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-400 mb-3">Next available times:</p>
+                <div className="space-y-3">
                   {slots.map((slot, index) => (
                     <button
                       key={index}
                       onClick={() => handleSlotSelect(slot)}
-                      className="w-full p-4 bg-[#232436] hover:bg-[#2a2b3d] rounded-xl transition-colors text-left group"
+                      className="w-full p-4 bg-[#1e1f2e] hover:bg-[#252636] border border-[#2a2b3d] hover:border-purple-500/30 rounded-xl transition-all text-left group"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="text-center">
-                            <p className="text-xs text-slate-500 uppercase">
-                              {formatSlotDate(slot.start)}
-                            </p>
-                            <p className="text-lg font-semibold text-white">
-                              {formatSlotTime(slot.start)}
-                            </p>
-                          </div>
-                          <div className="h-8 w-px bg-[#2a2b3d]" />
-                          <div>
-                            <p className="text-white font-medium">
-                              {formatSlotTime(slot.start)} - {formatSlotTime(slot.end)}
-                            </p>
-                            <p className="text-sm text-slate-400">
-                              {formatDuration(slot.duration)} available
-                            </p>
+                      <div className="flex items-center gap-4">
+                        {/* Calendar Icon */}
+                        <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        
+                        {/* Time Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-base">
+                            {formatSlotDate(slot.start)} {formatSlotTime(slot.start)}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 text-slate-400">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm">{formatDuration(slot.duration)} available</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-sm">Book</span>
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+
+                        {/* Hover Arrow */}
+                        <div className="text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
                       </div>
                     </button>
                   ))}
+
+                  {/* Custom Time Button */}
+                  <button
+                    onClick={() => {
+                      // For now, select the first slot and go to booking
+                      // In the future, this could open a date/time picker
+                      if (slots.length > 0) {
+                        handleSlotSelect(slots[0]);
+                      }
+                    }}
+                    className="w-full p-4 bg-transparent border border-dashed border-[#3a3b4d] hover:border-purple-500/50 rounded-xl transition-all text-center"
+                  >
+                    <span className="text-slate-400 hover:text-slate-300">Custom time...</span>
+                  </button>
                 </div>
               )}
             </>

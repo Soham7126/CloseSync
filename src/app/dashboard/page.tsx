@@ -224,8 +224,10 @@ export default function DashboardPage() {
         setMeetingsKey(prev => prev + 1); // Trigger meetings list refresh
     };
 
-    const handleMeetingDeleted = () => {
-        // Refresh meetings list after deletion
+    const handleMeetingDeleted = async () => {
+        // Refresh team data (for status cards) and meetings list after deletion
+        const members = await fetchTeamData();
+        setTeamMembers(members);
         setMeetingsKey(prev => prev + 1);
     };
 

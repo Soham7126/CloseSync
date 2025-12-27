@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface MeetingFormProps {
   participantName: string;
@@ -13,6 +13,7 @@ interface MeetingFormProps {
     title: string;
     duration: number;
     notes: string;
+    customStartTime?: string;
   }) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
@@ -36,19 +37,42 @@ export default function MeetingForm({
   const [duration, setDuration] = useState(30);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  
+  // Custom date/time state
+  const [customDate, setCustomDate] = useState('');
+  const [customTime, setCustomTime] = useState('');
+  const [useCustomTime, setUseCustomTime] = useState(false);
 
-  // Filter duration options based on available time
-  const availableDurations = DURATION_OPTIONS.filter(
-    opt => opt.value <= selectedSlot.duration
-  );
+  // Initialize with selected slot values
+  useEffect(() => {
+    const slotDate = new Date(selectedSlot.start);
+    setCustomDate(slotDate.toISOString().split('T')[0]);
+    setCustomTime(slotDate.toTimeString().slice(0, 5));
+  }, [selectedSlot.start]);
 
-  // If selected duration is not available, default to first available
-  if (!availableDurations.find(d => d.value === duration) && availableDurations.length > 0) {
-    setDuration(availableDurations[0].value);
-  }
+  // Calculate the actual start time (either from slot or custom)
+  const getActualStartTime = (): Date => {
+    if (useCustomTime && customDate && customTime) {
+      return new Date(`${customDate}T${customTime}`);
+    }
+    return new Date(selectedSlot.start);
+  };
 
-  const formatDateTime = (isoString: string) => {
-    const date = new Date(isoString);
+  const actualStartTime = getActualStartTime();
+
+  // Get minimum date (today)
+  const getMinDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
+  // Get maximum date (30 days from now)
+  const getMaxDate = () => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+    return maxDate.toISOString().split('T')[0];
+  };
+
+  const formatDateTime = (date: Date) => {
     return date.toLocaleString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -68,11 +92,18 @@ export default function MeetingForm({
       return;
     }
 
+    // Validate custom time is in the future
+    if (actualStartTime <= new Date()) {
+      setError('Please select a time in the future');
+      return;
+    }
+
     try {
       await onSubmit({
         title: title.trim(),
         duration,
         notes: notes.trim(),
+        customStartTime: useCustomTime ? actualStartTime.toISOString() : undefined,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create meeting';
@@ -89,7 +120,7 @@ export default function MeetingForm({
         </div>
         <div>
           <h3 className="text-white font-medium">Schedule with {participantName}</h3>
-          <p className="text-sm text-slate-400">{formatDateTime(selectedSlot.start)}</p>
+          <p className="text-sm text-slate-400">{formatDateTime(actualStartTime)}</p>
         </div>
       </div>
 
@@ -116,13 +147,61 @@ export default function MeetingForm({
         />
       </div>
 
+      {/* Date & Time Picker */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-slate-300">
+            Date & Time
+          </label>
+          <button
+            type="button"
+            onClick={() => setUseCustomTime(!useCustomTime)}
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            {useCustomTime ? 'Use suggested time' : 'Choose custom time'}
+          </button>
+        </div>
+        
+        {useCustomTime ? (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="date" className="block text-xs text-slate-500 mb-1">Date</label>
+              <input
+                type="date"
+                id="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={getMinDate()}
+                max={getMaxDate()}
+                className="w-full px-3 py-2.5 bg-[#232436] border border-[#2a2b3d] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <label htmlFor="time" className="block text-xs text-slate-500 mb-1">Time</label>
+              <input
+                type="time"
+                id="time"
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+                className="w-full px-3 py-2.5 bg-[#232436] border border-[#2a2b3d] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 [color-scheme:dark]"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 bg-[#232436] border border-[#2a2b3d] rounded-lg">
+            <p className="text-white">{formatDateTime(new Date(selectedSlot.start))}</p>
+            <p className="text-xs text-slate-500 mt-1">Based on mutual availability</p>
+          </div>
+        )}
+      </div>
+
       {/* Duration */}
       <div>
         <label htmlFor="duration" className="block text-sm font-medium text-slate-300 mb-2">
           Duration
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {availableDurations.map((opt) => (
+          {DURATION_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -137,11 +216,6 @@ export default function MeetingForm({
             </button>
           ))}
         </div>
-        {availableDurations.length === 0 && (
-          <p className="text-sm text-red-400 mt-2">
-            No duration options available for this slot
-          </p>
-        )}
       </div>
 
       {/* Notes */}
@@ -164,7 +238,7 @@ export default function MeetingForm({
       <div className="p-4 bg-[#232436]/50 rounded-lg space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-slate-400">Start</span>
-          <span className="text-white">{formatDateTime(selectedSlot.start)}</span>
+          <span className="text-white">{formatDateTime(actualStartTime)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-400">Duration</span>
@@ -174,7 +248,7 @@ export default function MeetingForm({
           <span className="text-slate-400">End</span>
           <span className="text-white">
             {formatDateTime(
-              new Date(new Date(selectedSlot.start).getTime() + duration * 60 * 1000).toISOString()
+              new Date(actualStartTime.getTime() + duration * 60 * 1000)
             )}
           </span>
         </div>
@@ -192,7 +266,7 @@ export default function MeetingForm({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || availableDurations.length === 0}
+          disabled={isSubmitting}
           className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSubmitting ? (

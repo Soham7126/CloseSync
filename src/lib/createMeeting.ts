@@ -470,8 +470,8 @@ export async function cancelMeeting(
 
   // Remove busy blocks for both users
   console.log(`[${timestamp}] Removing busy blocks...`);
-  await removeBusyBlock(supabase, meeting.organizer_id, meeting.start_time, meeting.end_time);
-  await removeBusyBlock(supabase, meeting.participant_id, meeting.start_time, meeting.end_time);
+  await removeBusyBlock(supabase, meeting.organizer_id, meeting.start_time, meeting.end_time, meeting.title);
+  await removeBusyBlock(supabase, meeting.participant_id, meeting.start_time, meeting.end_time, meeting.title);
 
   // Either hard delete or soft delete
   if (options?.hardDelete) {
@@ -569,23 +569,59 @@ async function removeBusyBlock(
   supabase: any,
   userId: string,
   startTime: string,
-  endTime: string
+  endTime: string,
+  label?: string
 ): Promise<void> {
+  console.log(`[removeBusyBlock] User: ${userId}`);
+  console.log(`[removeBusyBlock] Looking for start: ${startTime}, end: ${endTime}, label: ${label}`);
+
   const { data: status } = await supabase
     .from('user_status')
     .select('busy_blocks')
     .eq('user_id', userId)
     .single();
 
-  if (!status?.busy_blocks) return;
+  if (!status?.busy_blocks || status.busy_blocks.length === 0) {
+    console.log(`[removeBusyBlock] No busy blocks found for user`);
+    return;
+  }
+
+  console.log(`[removeBusyBlock] Current busy blocks:`, JSON.stringify(status.busy_blocks));
+
+  // Convert ISO timestamps to HH:MM format for comparison
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+  const startTimeFormatted = formatTimeString(startDate);
+  const endTimeFormatted = formatTimeString(endDate);
+
+  console.log(`[removeBusyBlock] Formatted times - start: ${startTimeFormatted}, end: ${endTimeFormatted}`);
 
   // Filter out the matching busy block
   const updatedBlocks = status.busy_blocks.filter((block: BusyBlock) => {
-    return !(block.start === startTime && block.end === endTime);
+    // Match by time (formatted) OR by label
+    const timeMatch = block.start === startTimeFormatted && block.end === endTimeFormatted;
+    const labelMatch = label && block.label === label;
+    
+    // Remove if both time and label match, or just time matches for calendar source
+    const shouldRemove = timeMatch || (labelMatch && block.source === 'calendar');
+    
+    if (shouldRemove) {
+      console.log(`[removeBusyBlock] Removing block:`, JSON.stringify(block));
+    }
+    
+    return !shouldRemove;
   });
 
-  await supabase
+  console.log(`[removeBusyBlock] Updated busy blocks:`, JSON.stringify(updatedBlocks));
+
+  const { error } = await supabase
     .from('user_status')
     .update({ busy_blocks: updatedBlocks })
     .eq('user_id', userId);
+
+  if (error) {
+    console.error(`[removeBusyBlock] Error updating:`, error);
+  } else {
+    console.log(`[removeBusyBlock] ✓ Successfully updated busy blocks`);
+  }
 }
