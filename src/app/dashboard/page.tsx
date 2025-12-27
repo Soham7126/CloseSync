@@ -11,6 +11,7 @@ import useSaveStatus, { ToastContainer } from '@/hooks/useSaveStatus';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { subscribeToTeamStatuses, ConnectionStatus } from '@/lib/realtime';
 import type { User, UserStatus } from '@/lib/supabase';
+import CalendarConnection from '@/components/CalendarConnection';
 
 interface TeamMember {
     user: User;
@@ -469,7 +470,34 @@ export default function DashboardPage() {
                 />
             )}
 
-
+            {/* Settings Modal */}
+            {showSettingsModal && user && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        onClick={() => setShowSettingsModal(false)}
+                    />
+                    <div className="relative bg-[#1a1b26] rounded-2xl border border-[#232436] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between p-5 border-b border-[#232436]">
+                            <div>
+                                <h2 className="text-lg font-semibold text-white">Settings</h2>
+                                <p className="text-sm text-slate-400 mt-0.5">Manage your integrations and preferences</p>
+                            </div>
+                            <button
+                                onClick={() => setShowSettingsModal(false)}
+                                className="p-2 rounded-lg hover:bg-[#232436] text-slate-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">
+                            <CalendarConnection userId={user.id} />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>

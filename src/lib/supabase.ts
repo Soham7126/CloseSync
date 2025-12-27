@@ -23,6 +23,7 @@ export interface BusyBlock {
     start: string;
     end: string;
     label: string;
+    source?: 'voice' | 'calendar';
 }
 
 export interface UserStatus {

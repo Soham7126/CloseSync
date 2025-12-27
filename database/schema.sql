@@ -99,6 +99,26 @@ CREATE TRIGGER trigger_update_user_status_timestamp
   EXECUTE FUNCTION update_last_updated();
 
 -- =============================================
+-- CALENDAR_CONNECTIONS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS calendar_connections (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider VARCHAR(50) NOT NULL DEFAULT 'google',
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  token_expiry TIMESTAMP WITH TIME ZONE NOT NULL,
+  calendar_email VARCHAR(255),
+  connected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_synced TIMESTAMP WITH TIME ZONE,
+  UNIQUE(user_id, provider)
+);
+
+-- Create indexes for calendar_connections
+CREATE INDEX IF NOT EXISTS idx_calendar_connections_user_id ON calendar_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_connections_provider ON calendar_connections(provider);
+
+-- =============================================
 -- VIEWS
 -- =============================================
 
