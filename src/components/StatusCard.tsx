@@ -122,12 +122,20 @@ export default function StatusCard({
 
     const avatarColor = getAvatarColor(user.name);
 
+    const handleCardClick = () => {
+        if (onQuickSync) {
+            onQuickSync(user.id);
+        }
+    };
+
     return (
         <div
+            onClick={handleCardClick}
             className={`
         relative rounded-xl border border-[#232436] bg-[#1E1F2E] 
         transition-all duration-200 overflow-hidden flex flex-col h-full
         hover:border-[#33344a]
+        ${onQuickSync ? 'cursor-pointer hover:bg-[#232436]/50' : ''}
         ${showPulse ? 'ring-1 ring-purple-500/50' : ''}
         ${saveState === 'saving' ? 'opacity-90 ring-1 ring-purple-500/50' : ''}
         ${saveState === 'success' ? 'ring-1 ring-emerald-500/50' : ''}

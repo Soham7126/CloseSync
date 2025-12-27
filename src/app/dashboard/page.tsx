@@ -12,15 +12,23 @@ import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { subscribeToTeamStatuses, ConnectionStatus } from '@/lib/realtime';
 import type { User, UserStatus } from '@/lib/supabase';
 import CalendarConnection from '@/components/CalendarConnection';
+import QuickSyncModal from '@/components/QuickSyncModal';
+import MeetingsList from '@/components/MeetingsList';
 
 interface TeamMember {
     user: User;
     status: UserStatus | null;
 }
 
+interface QuickSyncTarget {
+    user: User;
+    status: UserStatus | null;
+}
+
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, profile, team, signOut, isLoading: authLoading } = useAuth();
+    const { user, profile, team, session, signOut, isLoading: authLoading } = useAuth();
+    const [meetingsKey, setMeetingsKey] = useState(0);
     const { save, saveState, optimisticStatus, toasts, dismissToast } = useSaveStatus();
 
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -33,6 +41,7 @@ export default function DashboardPage() {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [quickSyncTarget, setQuickSyncTarget] = useState<QuickSyncTarget | null>(null);
 
     // Redirect to landing page if not authenticated
     useEffect(() => {
@@ -192,7 +201,32 @@ export default function DashboardPage() {
     };
 
     const handleQuickSync = (userId: string) => {
-        console.log('Quick sync with user:', userId);
+        // Don't allow quick sync with yourself
+        if (userId === user?.id) {
+            console.log('Cannot quick sync with yourself');
+            return;
+        }
+        
+        // Find the target user
+        const targetMember = teamMembers.find(m => m.user.id === userId);
+        if (targetMember) {
+            setQuickSyncTarget({
+                user: targetMember.user,
+                status: targetMember.status,
+            });
+        }
+    };
+
+    const handleMeetingCreated = async () => {
+        // Refresh team data and meetings list after meeting is created
+        const members = await fetchTeamData();
+        setTeamMembers(members);
+        setMeetingsKey(prev => prev + 1); // Trigger meetings list refresh
+    };
+
+    const handleMeetingDeleted = () => {
+        // Refresh meetings list after deletion
+        setMeetingsKey(prev => prev + 1);
     };
 
     const getInitials = (name: string) => {
@@ -414,6 +448,17 @@ export default function DashboardPage() {
                     </div>
                 )}
 
+                {/* Meetings List */}
+                {!isLoading && session?.access_token && (
+                    <div className="mt-8">
+                        <MeetingsList
+                            key={meetingsKey}
+                            token={session.access_token}
+                            onMeetingDeleted={handleMeetingDeleted}
+                        />
+                    </div>
+                )}
+
                 {/* No Search Results */}
                 {!isLoading && teamMembers.length > 0 && filteredMembers.length === 0 && (
                     <div className="text-center py-20">
@@ -497,6 +542,18 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Quick Sync Modal */}
+            {quickSyncTarget && user && (
+                <QuickSyncModal
+                    isOpen={!!quickSyncTarget}
+                    onClose={() => setQuickSyncTarget(null)}
+                    currentUserId={user.id}
+                    targetUser={quickSyncTarget.user}
+                    targetUserStatus={quickSyncTarget.status}
+                    onMeetingCreated={handleMeetingCreated}
+                />
             )}
 
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />

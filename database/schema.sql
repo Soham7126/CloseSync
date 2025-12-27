@@ -119,6 +119,39 @@ CREATE INDEX IF NOT EXISTS idx_calendar_connections_user_id ON calendar_connecti
 CREATE INDEX IF NOT EXISTS idx_calendar_connections_provider ON calendar_connections(provider);
 
 -- =============================================
+-- MEETINGS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS meetings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL DEFAULT 'Quick sync',
+  description TEXT,
+  organizer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  participant_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  duration INTEGER NOT NULL, -- in minutes
+  status VARCHAR(50) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+  google_event_id_organizer VARCHAR(255), -- Google Calendar event ID for organizer
+  google_event_id_participant VARCHAR(255), -- Google Calendar event ID for participant
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for meetings
+CREATE INDEX IF NOT EXISTS idx_meetings_organizer_id ON meetings(organizer_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_participant_id ON meetings(participant_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_start_time ON meetings(start_time);
+CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
+
+-- Trigger to update updated_at timestamp
+DROP TRIGGER IF EXISTS trigger_update_meetings_timestamp ON meetings;
+CREATE TRIGGER trigger_update_meetings_timestamp
+  BEFORE UPDATE ON meetings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_last_updated();
+
+-- =============================================
 -- VIEWS
 -- =============================================
 
