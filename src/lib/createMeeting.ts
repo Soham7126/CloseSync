@@ -625,3 +625,375 @@ async function removeBusyBlock(
     console.log(`[removeBusyBlock] ✓ Successfully updated busy blocks`);
   }
 }
+
+// =============================================
+// GROUP MEETING FUNCTIONS
+// =============================================
+
+export interface CreateGroupMeetingInput {
+  organizerId: string;
+  participantIds: string[];
+  title: string;
+  startTime: Date;
+  duration: number; // in minutes
+  notes?: string;
+}
+
+export interface GroupMeeting {
+  id: string;
+  title: string;
+  description: string | null;
+  organizer_id: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  participants?: GroupMeetingParticipant[];
+}
+
+export interface GroupMeetingParticipant {
+  id: string;
+  meeting_id: string;
+  user_id: string;
+  google_event_id: string | null;
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
+}
+
+/**
+ * Creates a group meeting with multiple participants
+ */
+export async function createGroupMeeting(input: CreateGroupMeetingInput): Promise<GroupMeeting> {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ========================================`);
+  console.log(`[${timestamp}] Creating group meeting`);
+  console.log(`[${timestamp}] Organizer: ${input.organizerId}`);
+  console.log(`[${timestamp}] Participants: ${input.participantIds.join(', ')}`);
+  console.log(`[${timestamp}] Title: ${input.title}`);
+  console.log(`[${timestamp}] Start: ${input.startTime.toISOString()}`);
+  console.log(`[${timestamp}] Duration: ${input.duration} minutes`);
+  console.log(`[${timestamp}] ========================================`);
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const endTime = new Date(input.startTime.getTime() + input.duration * 60 * 1000);
+  const allUserIds = [input.organizerId, ...input.participantIds];
+
+  // Step 1: Get all user details
+  console.log(`[${timestamp}] Step 1: Fetching user details...`);
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, name, email')
+    .in('id', allUserIds);
+
+  if (usersError || !users || users.length === 0) {
+    console.error(`[${timestamp}] ERROR: Failed to fetch users`);
+    throw new Error('Failed to fetch user details');
+  }
+
+  const organizer = users.find(u => u.id === input.organizerId);
+  if (!organizer) {
+    throw new Error('Organizer not found');
+  }
+
+  console.log(`[${timestamp}] Found ${users.length} users`);
+
+  // Step 2: Create group meeting in database
+  console.log(`[${timestamp}] Step 2: Creating group meeting in database...`);
+  const meetingData = {
+    title: input.title,
+    description: input.notes || null,
+    organizer_id: input.organizerId,
+    start_time: input.startTime.toISOString(),
+    end_time: endTime.toISOString(),
+    duration: input.duration,
+    status: 'scheduled',
+    notes: input.notes || null,
+  };
+
+  const { data: meeting, error: meetingError } = await supabase
+    .from('group_meetings')
+    .insert(meetingData)
+    .select()
+    .single();
+
+  if (meetingError || !meeting) {
+    console.error(`[${timestamp}] ERROR: Failed to create meeting:`, meetingError);
+    throw new Error('Failed to create group meeting');
+  }
+
+  console.log(`[${timestamp}] ✓ Meeting created: ${meeting.id}`);
+
+  // Step 3: Add all participants (including organizer)
+  console.log(`[${timestamp}] Step 3: Adding participants...`);
+  const participantRecords = allUserIds.map(userId => ({
+    meeting_id: meeting.id,
+    user_id: userId,
+    response_status: userId === input.organizerId ? 'accepted' : 'pending',
+  }));
+
+  const { error: participantsError } = await supabase
+    .from('group_meeting_participants')
+    .insert(participantRecords);
+
+  if (participantsError) {
+    console.error(`[${timestamp}] ERROR: Failed to add participants:`, participantsError);
+    // Don't throw - meeting is created, just log the error
+  } else {
+    console.log(`[${timestamp}] ✓ Added ${allUserIds.length} participants`);
+  }
+
+  // Step 4: Add to Google Calendars for all users with connected calendars
+  console.log(`[${timestamp}] Step 4: Adding to Google Calendars...`);
+  const attendeeEmails = users.map(u => ({ email: u.email }));
+
+  for (const userId of allUserIds) {
+    try {
+      const eventId = await createGoogleCalendarEventForGroup(
+        supabase,
+        userId,
+        {
+          title: input.title,
+          description: input.notes || '',
+          startTime: input.startTime,
+          endTime,
+          attendees: attendeeEmails,
+          organizerName: organizer.name,
+        }
+      );
+
+      if (eventId) {
+        // Update participant record with Google event ID
+        await supabase
+          .from('group_meeting_participants')
+          .update({ google_event_id: eventId })
+          .eq('meeting_id', meeting.id)
+          .eq('user_id', userId);
+
+        console.log(`[${timestamp}] ✓ Added to calendar for user ${userId}`);
+      }
+    } catch (err) {
+      console.error(`[${timestamp}] Failed to add to calendar for user ${userId}:`, err);
+    }
+  }
+
+  // Step 5: Update busy blocks for all users
+  console.log(`[${timestamp}] Step 5: Updating busy blocks...`);
+  const newBusyBlock: BusyBlock = {
+    start: formatTimeString(input.startTime),
+    end: formatTimeString(endTime),
+    label: input.title,
+    source: 'calendar',
+  };
+
+  for (const userId of allUserIds) {
+    await updateUserBusyBlock(supabase, userId, newBusyBlock);
+  }
+  console.log(`[${timestamp}] ✓ Busy blocks updated for ${allUserIds.length} users`);
+
+  console.log(`[${timestamp}] ========================================`);
+  console.log(`[${timestamp}] ✓ Group meeting created successfully`);
+  console.log(`[${timestamp}] ========================================`);
+
+  return meeting as GroupMeeting;
+}
+
+/**
+ * Create Google Calendar event for group meeting
+ */
+async function createGoogleCalendarEventForGroup(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  eventData: {
+    title: string;
+    description: string;
+    startTime: Date;
+    endTime: Date;
+    attendees: { email: string }[];
+    organizerName: string;
+  }
+): Promise<string | null> {
+  // Get user's calendar connection
+  const { data: connection } = await supabase
+    .from('calendar_connections')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!connection) {
+    return null;
+  }
+
+  // Refresh token if needed
+  let accessToken = connection.access_token;
+  const tokenExpiry = new Date(connection.token_expiry);
+  
+  if (tokenExpiry <= new Date()) {
+    accessToken = await refreshGoogleToken(userId);
+  }
+
+  // Create event
+  const event = {
+    summary: eventData.title,
+    description: `Group meeting organized by ${eventData.organizerName}\n\n${eventData.description}`,
+    start: {
+      dateTime: eventData.startTime.toISOString(),
+      timeZone: 'UTC',
+    },
+    end: {
+      dateTime: eventData.endTime.toISOString(),
+      timeZone: 'UTC',
+    },
+    attendees: eventData.attendees,
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 10 },
+      ],
+    },
+  };
+
+  const response = await fetch(
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Google Calendar API error: ${errorData.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json() as GoogleCalendarEventResponse;
+  return data.id;
+}
+
+/**
+ * Cancel a group meeting
+ */
+export async function cancelGroupMeeting(
+  meetingId: string,
+  cancelledBy: string,
+  options?: { hardDelete?: boolean }
+): Promise<void> {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] Cancelling group meeting: ${meetingId}`);
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Get meeting details
+  const { data: meeting, error: fetchError } = await supabase
+    .from('group_meetings')
+    .select('*')
+    .eq('id', meetingId)
+    .single();
+
+  if (fetchError || !meeting) {
+    throw new Error('Meeting not found');
+  }
+
+  // Get all participants
+  const { data: participants } = await supabase
+    .from('group_meeting_participants')
+    .select('*')
+    .eq('meeting_id', meetingId);
+
+  // Verify user is the organizer or a participant
+  const isOrganizer = meeting.organizer_id === cancelledBy;
+  const isParticipant = participants?.some(p => p.user_id === cancelledBy);
+
+  if (!isOrganizer && !isParticipant) {
+    throw new Error('Not authorized to cancel this meeting');
+  }
+
+  // Delete from Google Calendars for all participants
+  if (participants) {
+    for (const participant of participants) {
+      if (participant.google_event_id) {
+        try {
+          await deleteGoogleCalendarEvent(supabase, participant.user_id, participant.google_event_id);
+        } catch (err) {
+          console.error(`Failed to delete calendar event for user ${participant.user_id}:`, err);
+        }
+      }
+
+      // Remove busy blocks
+      await removeBusyBlock(supabase, participant.user_id, meeting.start_time, meeting.end_time, meeting.title);
+    }
+  }
+
+  // Update or delete meeting
+  if (options?.hardDelete) {
+    await supabase.from('group_meetings').delete().eq('id', meetingId);
+  } else {
+    await supabase
+      .from('group_meetings')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', meetingId);
+  }
+
+  console.log(`[${timestamp}] ✓ Group meeting cancelled`);
+}
+
+/**
+ * Get user's group meetings
+ */
+export async function getUserGroupMeetings(
+  userId: string,
+  options?: { limit?: number; status?: string }
+): Promise<GroupMeeting[]> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Get meeting IDs where user is a participant
+  const { data: participations } = await supabase
+    .from('group_meeting_participants')
+    .select('meeting_id')
+    .eq('user_id', userId);
+
+  if (!participations || participations.length === 0) {
+    return [];
+  }
+
+  const meetingIds = participations.map(p => p.meeting_id);
+
+  let query = supabase
+    .from('group_meetings')
+    .select('*')
+    .in('id', meetingIds)
+    .gte('start_time', new Date().toISOString())
+    .order('start_time', { ascending: true });
+
+  if (options?.status) {
+    query = query.eq('status', options.status);
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch group meetings: ${error.message}`);
+  }
+
+  return (data || []) as GroupMeeting[];
+}

@@ -144,6 +144,52 @@ CREATE INDEX IF NOT EXISTS idx_meetings_participant_id ON meetings(participant_i
 CREATE INDEX IF NOT EXISTS idx_meetings_start_time ON meetings(start_time);
 CREATE INDEX IF NOT EXISTS idx_meetings_status ON meetings(status);
 
+-- =============================================
+-- GROUP_MEETINGS TABLE
+-- For meetings with 3+ participants
+-- =============================================
+CREATE TABLE IF NOT EXISTS group_meetings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL DEFAULT 'Group sync',
+  description TEXT,
+  organizer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  duration INTEGER NOT NULL, -- in minutes
+  status VARCHAR(50) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =============================================
+-- GROUP_MEETING_PARTICIPANTS TABLE
+-- Links participants to group meetings
+-- =============================================
+CREATE TABLE IF NOT EXISTS group_meeting_participants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  meeting_id UUID NOT NULL REFERENCES group_meetings(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  google_event_id VARCHAR(255), -- Google Calendar event ID for this participant
+  response_status VARCHAR(50) DEFAULT 'pending' CHECK (response_status IN ('pending', 'accepted', 'declined', 'tentative')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(meeting_id, user_id)
+);
+
+-- Create indexes for group meetings
+CREATE INDEX IF NOT EXISTS idx_group_meetings_organizer_id ON group_meetings(organizer_id);
+CREATE INDEX IF NOT EXISTS idx_group_meetings_start_time ON group_meetings(start_time);
+CREATE INDEX IF NOT EXISTS idx_group_meetings_status ON group_meetings(status);
+CREATE INDEX IF NOT EXISTS idx_group_meeting_participants_meeting_id ON group_meeting_participants(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_group_meeting_participants_user_id ON group_meeting_participants(user_id);
+
+-- Trigger to update updated_at timestamp for group_meetings
+DROP TRIGGER IF EXISTS trigger_update_group_meetings_timestamp ON group_meetings;
+CREATE TRIGGER trigger_update_group_meetings_timestamp
+  BEFORE UPDATE ON group_meetings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_last_updated();
+
 -- Trigger to update updated_at timestamp
 DROP TRIGGER IF EXISTS trigger_update_meetings_timestamp ON meetings;
 CREATE TRIGGER trigger_update_meetings_timestamp

@@ -13,7 +13,7 @@ import { subscribeToTeamStatuses, ConnectionStatus } from '@/lib/realtime';
 import type { User, UserStatus } from '@/lib/supabase';
 import CalendarConnection from '@/components/CalendarConnection';
 import QuickSyncModal from '@/components/QuickSyncModal';
-import MeetingsList from '@/components/MeetingsList';
+import GroupSchedulingModal from '@/components/GroupSchedulingModal';
 
 interface TeamMember {
     user: User;
@@ -42,6 +42,7 @@ export default function DashboardPage() {
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [quickSyncTarget, setQuickSyncTarget] = useState<QuickSyncTarget | null>(null);
+    const [showGroupModal, setShowGroupModal] = useState(false);
 
     // Redirect to landing page if not authenticated
     useEffect(() => {
@@ -307,6 +308,32 @@ export default function DashboardPage() {
                                 Update My Day
                             </button>
 
+                            {/* Schedule Group Meeting Button */}
+                            {team && teamMembers.length > 1 && (
+                                <button
+                                    onClick={() => setShowGroupModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#232436] hover:bg-[#2a2b3d] text-white font-medium transition-all border border-[#3a3b4d]"
+                                    title="Schedule Group Meeting"
+                                >
+                                    <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Group Meeting
+                                </button>
+                            )}
+
+                            {/* Meetings Tab Button */}
+                            <button
+                                onClick={() => router.push('/dashboard/meetings')}
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#232436] hover:bg-[#2a2b3d] text-white font-medium transition-all border border-[#3a3b4d]"
+                                title="View All Meetings"
+                            >
+                                <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Meetings
+                            </button>
+
                             <div className="w-px h-8 bg-[#232436] mx-1" />
 
                             {/* Invite Button */}
@@ -450,17 +477,6 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* Meetings List */}
-                {!isLoading && session?.access_token && (
-                    <div className="mt-8">
-                        <MeetingsList
-                            key={meetingsKey}
-                            token={session.access_token}
-                            onMeetingDeleted={handleMeetingDeleted}
-                        />
-                    </div>
-                )}
-
                 {/* No Search Results */}
                 {!isLoading && teamMembers.length > 0 && filteredMembers.length === 0 && (
                     <div className="text-center py-20">
@@ -554,6 +570,17 @@ export default function DashboardPage() {
                     currentUserId={user.id}
                     targetUser={quickSyncTarget.user}
                     targetUserStatus={quickSyncTarget.status}
+                    onMeetingCreated={handleMeetingCreated}
+                />
+            )}
+
+            {/* Group Scheduling Modal */}
+            {showGroupModal && user && (
+                <GroupSchedulingModal
+                    isOpen={showGroupModal}
+                    onClose={() => setShowGroupModal(false)}
+                    currentUserId={user.id}
+                    teamMembers={teamMembers}
                     onMeetingCreated={handleMeetingCreated}
                 />
             )}
