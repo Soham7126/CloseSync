@@ -74,56 +74,65 @@ export default function NextUpCard({ meeting, isLoading }: NextUpCardProps) {
 
     if (isLoading) {
         return (
-            <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
-                <div className="h-5 bg-gray-200 rounded w-32 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-40" />
+            <div className="animate-pulse space-y-3">
+                <div className="h-4 bg-gray-100 rounded w-24" />
+                <div className="h-5 bg-gray-100 rounded w-32" />
+                <div className="h-4 bg-gray-100 rounded w-40" />
             </div>
         );
     }
 
     if (!meeting) {
         return (
-            <p className="text-[#6B7280] text-sm">No upcoming meetings</p>
+            <div className="flex flex-col items-center py-4 text-center">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                    <svg className="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <p className="text-gray-500 text-sm">No upcoming meetings</p>
+            </div>
         );
     }
 
     return (
         <div>
             {/* Label */}
-            <div className="flex items-center gap-2 text-[#6B7280] text-sm mb-3">
-                <span>→</span>
+            <div className="flex items-center gap-2 text-gray-400 text-xs font-medium uppercase tracking-wide mb-3">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
                 <span>Next Meeting</span>
             </div>
 
             {/* Meeting Title */}
-            <h3 className="text-lg font-bold text-[#1F2937] mb-1">{meeting.title}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{meeting.title}</h3>
 
             {/* Time */}
-            <p className="text-sm text-[#6B7280] mb-4">
+            <p className="text-sm text-gray-500 mb-4">
                 {formatMeetingTime(meeting.start_time, meeting.end_time)}
             </p>
 
             {/* Countdown */}
             {countdown && (
-                <p className="text-xs text-[#6366F1] mb-4">{countdown}</p>
+                <div className="inline-flex items-center px-3 py-1.5 bg-[#FFF7ED] text-[#F97316] rounded-full text-xs font-medium mb-5">
+                    <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {countdown}
+                </div>
             )}
 
             {/* Join Button */}
-            <button
-                onClick={handleJoin}
-                disabled={!meeting.meeting_link}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${meeting.meeting_link
-                    ? 'bg-[#6366F1] text-white hover:bg-[#5558E3]'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-            >
-                Join
-            </button>
-
-            {!meeting.meeting_link && (
-                <p className="text-xs text-gray-400 mt-2">No meeting link available</p>
-            )}
+            <div className="pt-2">
+                <button
+                    onClick={handleJoin}
+                    disabled={!meeting.meeting_link}
+                    className={`btn w-full ${meeting.meeting_link ? 'btn-primary' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                >
+                    {meeting.meeting_link ? 'Join Meeting' : 'No link available'}
+                </button>
+            </div>
         </div>
     );
 }

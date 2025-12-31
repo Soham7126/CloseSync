@@ -143,21 +143,21 @@ export default function SpeakYourDayCard({
     return (
         <div>
             {/* Microphone Button */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-8">
                 <button
                     onClick={handleMicClick}
                     disabled={isTranscribing || isEditing}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
-                        ? 'bg-red-500 animate-pulse shadow-lg shadow-red-500/30'
+                    className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording
+                        ? 'bg-red-500 shadow-lg shadow-red-500/30 scale-105'
                         : isTranscribing || isEditing
-                            ? 'bg-gray-200 cursor-not-allowed'
-                            : 'bg-gray-100 hover:bg-gray-200'
+                            ? 'bg-gray-100 cursor-not-allowed'
+                            : 'bg-[#FFF7ED] hover:bg-[#FFEDD5] border-2 border-[#F97316] hover:scale-105'
                         }`}
                     aria-label={isRecording ? 'Stop recording' : 'Start recording'}
                     aria-live="polite"
                 >
                     <svg
-                        className={`w-8 h-8 ${isRecording ? 'text-white' : 'text-gray-500'}`}
+                        className={`w-10 h-10 ${isRecording ? 'text-white animate-pulse' : 'text-[#F97316]'}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -174,55 +174,60 @@ export default function SpeakYourDayCard({
 
             {/* Instruction Text */}
             {!isRecording && !isTranscribing && !isEditing && (
-                <p className="text-sm text-gray-400 text-center mb-4">
-                    Click the microphone to start speaking...
+                <p className="text-sm text-gray-400 text-center mb-6">
+                    Tap the microphone to speak your status
                 </p>
             )}
 
             {/* Recording Indicator */}
             {isRecording && (
-                <div className="text-center mb-4">
-                    <p className="text-sm text-red-500 font-medium mb-2">
-                        🔴 Recording... Click mic to stop
-                    </p>
-                    <span className="text-sm font-medium text-gray-500">{formatTime(recordingTime)}</span>
+                <div className="text-center mb-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full">
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-sm text-red-600 font-medium">Recording</span>
+                        <span className="text-sm font-medium text-red-500">{formatTime(recordingTime)}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Click microphone to stop</p>
                 </div>
             )}
 
             {/* Transcribing State */}
             {isTranscribing && (
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <div className="flex items-center justify-center gap-2 text-gray-500">
-                        <div className="w-4 h-4 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm">Transcribing your speech...</span>
+                <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                    <div className="flex items-center justify-center gap-3 text-gray-500">
+                        <div className="w-5 h-5 border-2 border-[#F97316] border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm font-medium">Transcribing your speech...</span>
                     </div>
                 </div>
             )}
 
             {/* Editable Transcript with Confirm/Cancel */}
             {isEditing && !isTranscribing && (
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
                         Review & Edit Your Transcript
                     </label>
                     <textarea
                         value={editableTranscript}
                         onChange={(e) => setEditableTranscript(e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1]"
+                        className="w-full p-4 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
                         rows={3}
                         placeholder="Edit your transcript if needed..."
                     />
-                    <div className="flex gap-3 mt-3">
+                    <div className="flex gap-3 mt-4">
                         <button
                             onClick={handleConfirm}
                             disabled={!editableTranscript.trim()}
-                            className="flex-1 px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm font-medium hover:bg-[#5558E3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="btn btn-primary flex-1"
                         >
-                            ✓ Confirm & Save
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Confirm & Save
                         </button>
                         <button
                             onClick={handleCancel}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="btn btn-secondary"
                         >
                             Cancel
                         </button>
@@ -231,7 +236,7 @@ export default function SpeakYourDayCard({
             )}
 
             {/* Waveform Visualization */}
-            <div className="flex items-center gap-1 justify-center h-10">
+            <div className="flex items-center gap-1 justify-center h-12">
                 {waveformBars.map((height, i) => (
                     <div
                         key={i}

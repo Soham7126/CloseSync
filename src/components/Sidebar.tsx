@@ -105,9 +105,9 @@ export default function Sidebar({ isCollapsed = false, onToggle }: SidebarProps)
                             <li key={item.name}>
                                 <Link
                                     href={item.href}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
-                                        ? 'bg-[#6366F1] text-white'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active
+                                        ? 'bg-[#FFF7ED] text-[#F97316] border border-[#FDBA74]'
+                                        : 'text-gray-600 hover:bg-gray-50'
                                         } ${isCollapsed ? 'justify-center' : ''}`}
                                     aria-current={active ? 'page' : undefined}
                                     title={isCollapsed ? item.name : undefined}

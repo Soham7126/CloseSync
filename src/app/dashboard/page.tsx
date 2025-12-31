@@ -277,16 +277,16 @@ export default function DashboardPage() {
         <div>
             {/* Calendar Connection Banner */}
             {calendarConnected === false && (
-                <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                <div className="mb-8 p-5 bg-[#FFF7ED] border border-[#FDBA74] rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-xl">📅</span>
-                        <span className="text-[#1F2937]">
+                        <span className="text-gray-700">
                             Connect your calendar to auto-sync meetings
                         </span>
                     </div>
                     <button
                         onClick={() => setShowVoiceModal(true)}
-                        className="px-4 py-2 bg-[#6366F1] text-white rounded-xl text-sm font-medium hover:bg-[#5558E3] transition-colors"
+                        className="btn btn-primary"
                     >
                         Connect Calendar
                     </button>
@@ -294,15 +294,15 @@ export default function DashboardPage() {
             )}
 
             {/* Page Title */}
-            <h1 className="text-2xl font-bold text-[#1F2937] mb-6">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-10">Dashboard</h1>
 
             {/* 12-Column Grid Layout */}
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-10">
                 {/* Left Column - 8 columns */}
-                <div className="col-span-12 lg:col-span-8 space-y-6">
-                    {/* Speak Your Day Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Your Day</h2>
+                <div className="col-span-12 lg:col-span-8 space-y-10">
+                    {/* Speak Your Day Card - Hero Card */}
+                    <div className="card-hero">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Your Day</h2>
                         <SpeakYourDayCard
                             onRecordingComplete={handleRecordingComplete}
                             transcript={transcript}
@@ -313,8 +313,8 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Your Status Today Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Status Today</h2>
+                    <div className="card">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Status Today</h2>
                         <StatusTodayCard
                             statusColor={getStatusColor()}
                             busyBlocks={getBusyBlocks()}
@@ -324,42 +324,42 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="card">
                         <ActionButtons onScheduleGroupMeeting={() => setShowGroupModal(true)} />
                     </div>
                 </div>
 
                 {/* Right Column - 4 columns */}
-                <div className="col-span-12 lg:col-span-4 space-y-6">
+                <div className="col-span-12 lg:col-span-4 space-y-10">
                     {/* Next Up Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Next Up</h2>
+                    <div className="card">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Next Up</h2>
                         <NextUpCard meeting={nextMeeting} isLoading={isLoadingMeeting} />
                     </div>
 
                     {/* Quick Actions Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Quick Actions</h2>
+                    <div className="card">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h2>
                         <QuickActionsCard onScheduleGroupMeeting={() => setShowGroupModal(true)} />
                     </div>
 
                     {/* Team Summary Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Team</h2>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Team Members</span>
-                                <span className="font-medium text-[#1F2937]">{teamMembers.length}</span>
+                    <div className="card">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Team</h2>
+                        <div className="space-y-5">
+                            <div className="flex items-center justify-between py-1">
+                                <span className="text-gray-500">Team Members</span>
+                                <span className="font-semibold text-gray-900">{teamMembers.length}</span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Available Now</span>
-                                <span className="font-medium text-green-600">
+                            <div className="flex items-center justify-between py-1">
+                                <span className="text-gray-500">Available Now</span>
+                                <span className="font-semibold text-green-600">
                                     {teamMembers.filter(m => m.status?.status_color === 'green').length}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Busy</span>
-                                <span className="font-medium text-yellow-600">
+                            <div className="flex items-center justify-between py-1">
+                                <span className="text-gray-500">Busy</span>
+                                <span className="font-semibold text-amber-500">
                                     {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
                                 </span>
                             </div>
