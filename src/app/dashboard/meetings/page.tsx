@@ -121,15 +121,6 @@ export default function MeetingsPage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="p-2 hover:bg-[#232436] rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-bold text-white">Meetings</h1>
             </div>
           </div>
 
@@ -137,21 +128,19 @@ export default function MeetingsPage() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'upcoming'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-[#232436] text-slate-400 hover:text-white'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'upcoming'
+                ? 'bg-purple-600 text-white'
+                : 'bg-[#232436] text-slate-400 hover:text-white'
+                }`}
             >
               Upcoming ({upcomingMeetings.length})
             </button>
             <button
               onClick={() => setActiveTab('past')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'past'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-[#232436] text-slate-400 hover:text-white'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'past'
+                ? 'bg-purple-600 text-white'
+                : 'bg-[#232436] text-slate-400 hover:text-white'
+                }`}
             >
               Past ({pastMeetings.length})
             </button>

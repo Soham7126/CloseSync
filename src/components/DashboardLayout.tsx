@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 />
 
                 {/* Page Content */}
-                <main className="flex-1 p-8 lg:p-10">
+                <main className="flex-1 p-8 pt-20 lg:p-12 lg:pt-24 lg:pl-14">
                     <div className="max-w-[1200px] mx-auto">
                         {children}
                     </div>

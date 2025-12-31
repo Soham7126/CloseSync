@@ -135,10 +135,6 @@ export default function SchedulePage() {
     return (
         <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#1F2937]">Schedule</h1>
-                    <p className="text-[#6B7280]">View and manage your meetings</p>
-                </div>
 
                 {/* View Toggle & Navigation */}
                 <div className="flex items-center gap-3">

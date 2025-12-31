@@ -448,7 +448,6 @@ function SettingsContent() {
 
     return (
         <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold text-[#1F2937] mb-6">Settings</h1>
 
             <div className="flex gap-6">
                 {/* Sidebar */}
@@ -459,8 +458,8 @@ function SettingsContent() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition-colors ${currentTab === tab.id
-                                        ? 'bg-[#6366F1] text-white'
-                                        : 'text-[#6B7280] hover:bg-gray-100'
+                                    ? 'bg-[#6366F1] text-white'
+                                    : 'text-[#6B7280] hover:bg-gray-100'
                                     }`}
                             >
                                 {tab.icon}

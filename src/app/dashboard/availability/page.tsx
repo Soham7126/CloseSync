@@ -156,8 +156,6 @@ export default function AvailabilityPage() {
 
     return (
         <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold text-[#1F2937] mb-2">Team Availability</h1>
-            <p className="text-[#6B7280] mb-6">View your team&apos;s availability and schedule meetings</p>
 
             {/* Connection Status */}
             {connectionStatus !== 'connected' && (

@@ -143,21 +143,21 @@ export default function SpeakYourDayCard({
     return (
         <div>
             {/* Microphone Button */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-6">
                 <button
                     onClick={handleMicClick}
                     disabled={isTranscribing || isEditing}
-                    className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording
-                        ? 'bg-red-500 shadow-lg shadow-red-500/30 scale-105'
+                    className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording
+                        ? 'bg-red-500 shadow-lg shadow-red-500/30 scale-110'
                         : isTranscribing || isEditing
                             ? 'bg-gray-100 cursor-not-allowed'
-                            : 'bg-[#FFF7ED] hover:bg-[#FFEDD5] border-2 border-[#F97316] hover:scale-105'
+                            : 'bg-gradient-to-b from-[#FFF7ED] to-[#FFEDD5] border-2 border-[#F97316] hover:scale-105 animate-subtle-pulse'
                         }`}
                     aria-label={isRecording ? 'Stop recording' : 'Start recording'}
                     aria-live="polite"
                 >
                     <svg
-                        className={`w-10 h-10 ${isRecording ? 'text-white animate-pulse' : 'text-[#F97316]'}`}
+                        className={`w-8 h-8 ${isRecording ? 'text-white animate-pulse' : 'text-[#F97316]'}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

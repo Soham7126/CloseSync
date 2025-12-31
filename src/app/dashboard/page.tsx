@@ -6,7 +6,6 @@ import SpeakYourDayCard from '@/components/SpeakYourDayCard';
 import StatusTodayCard from '@/components/StatusTodayCard';
 import NextUpCard from '@/components/NextUpCard';
 import QuickActionsCard from '@/components/QuickActionsCard';
-import ActionButtons from '@/components/ActionButtons';
 import VoiceInputFlow from '@/components/VoiceInputFlow';
 import GroupSchedulingModal from '@/components/GroupSchedulingModal';
 import CalendarConnection from '@/components/CalendarConnection';
@@ -293,16 +292,16 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* Page Title */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-10">Dashboard</h1>
-
             {/* 12-Column Grid Layout */}
-            <div className="grid grid-cols-12 gap-10">
+            <div className="grid grid-cols-12 gap-8 lg:gap-12">
                 {/* Left Column - 8 columns */}
-                <div className="col-span-12 lg:col-span-8 space-y-10">
+                <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
                     {/* Speak Your Day Card - Hero Card */}
                     <div className="card-hero">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Your Day</h2>
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="w-2 h-2 rounded-full bg-[#F97316]" />
+                            <h2 className="text-lg font-semibold text-gray-900">Your Day</h2>
+                        </div>
                         <SpeakYourDayCard
                             onRecordingComplete={handleRecordingComplete}
                             transcript={transcript}
@@ -312,9 +311,14 @@ export default function DashboardPage() {
                         />
                     </div>
 
-                    {/* Your Status Today Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Status Today</h2>
+                    {/* Your Status Today Card - With tint */}
+                    <div className="card-status">
+                        <div className="flex items-center gap-2 mb-6">
+                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            <h2 className="text-lg font-semibold text-gray-900">Status Today</h2>
+                        </div>
                         <StatusTodayCard
                             statusColor={getStatusColor()}
                             busyBlocks={getBusyBlocks()}
@@ -322,43 +326,59 @@ export default function DashboardPage() {
                             timezone="IST"
                         />
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="card">
-                        <ActionButtons onScheduleGroupMeeting={() => setShowGroupModal(true)} />
-                    </div>
                 </div>
 
                 {/* Right Column - 4 columns */}
-                <div className="col-span-12 lg:col-span-4 space-y-10">
-                    {/* Next Up Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Next Up</h2>
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                    {/* Next Up Card - Calendar accent */}
+                    <div className="card-widget border-l-4 border-l-[#F97316]">
+                        <div className="flex items-center gap-2 mb-5">
+                            <svg className="w-4 h-4 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Next Up</h2>
+                        </div>
                         <NextUpCard meeting={nextMeeting} isLoading={isLoadingMeeting} />
                     </div>
 
-                    {/* Quick Actions Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h2>
+                    {/* Quick Actions Card - Arrow accent */}
+                    <div className="card-widget">
+                        <div className="flex items-center gap-2 mb-5">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Shortcuts</h2>
+                        </div>
                         <QuickActionsCard onScheduleGroupMeeting={() => setShowGroupModal(true)} />
                     </div>
 
-                    {/* Team Summary Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-6">Team</h2>
-                        <div className="space-y-5">
-                            <div className="flex items-center justify-between py-1">
-                                <span className="text-gray-500">Team Members</span>
+                    {/* Team Summary - Simple inline */}
+                    <div className="card-widget bg-gray-50/50">
+                        <div className="flex items-center gap-2 mb-5">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Team</h2>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-500 text-sm">Members</span>
                                 <span className="font-semibold text-gray-900">{teamMembers.length}</span>
                             </div>
-                            <div className="flex items-center justify-between py-1">
-                                <span className="text-gray-500">Available Now</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-500 text-sm flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                                    Available
+                                </span>
                                 <span className="font-semibold text-green-600">
                                     {teamMembers.filter(m => m.status?.status_color === 'green').length}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between py-1">
-                                <span className="text-gray-500">Busy</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-gray-500 text-sm flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                    Busy
+                                </span>
                                 <span className="font-semibold text-amber-500">
                                     {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
                                 </span>
