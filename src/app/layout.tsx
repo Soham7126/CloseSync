@@ -9,8 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Sync - Your team's day, in seconds",
+  title: "CloseSync - Your team's day, in seconds",
   description: "Speak your status. See who's free. Schedule instantly.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

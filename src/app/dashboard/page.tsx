@@ -1,85 +1,111 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
-import StatusCard from '@/components/StatusCard';
+import SpeakYourDayCard from '@/components/SpeakYourDayCard';
+import StatusTodayCard from '@/components/StatusTodayCard';
+import NextUpCard from '@/components/NextUpCard';
+import QuickActionsCard from '@/components/QuickActionsCard';
+import ActionButtons from '@/components/ActionButtons';
 import VoiceInputFlow from '@/components/VoiceInputFlow';
-import InviteModal from '@/components/InviteModal';
-
+import GroupSchedulingModal from '@/components/GroupSchedulingModal';
+import CalendarConnection from '@/components/CalendarConnection';
 import useSaveStatus, { ToastContainer } from '@/hooks/useSaveStatus';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
-import { subscribeToTeamStatuses, ConnectionStatus } from '@/lib/realtime';
-import type { User, UserStatus } from '@/lib/supabase';
-import CalendarConnection from '@/components/CalendarConnection';
-import QuickSyncModal from '@/components/QuickSyncModal';
-import GroupSchedulingModal from '@/components/GroupSchedulingModal';
+import type { UserStatus, User } from '@/lib/supabase';
+
+interface Meeting {
+    id: string;
+    title: string;
+    start_time: string;
+    end_time: string;
+    meeting_link?: string | null;
+    organizer_id: string;
+    participant_id: string;
+}
 
 interface TeamMember {
     user: User;
     status: UserStatus | null;
 }
 
-interface QuickSyncTarget {
-    user: User;
-    status: UserStatus | null;
-}
-
 export default function DashboardPage() {
-    const router = useRouter();
-    const { user, profile, team, session, signOut, isLoading: authLoading } = useAuth();
-    const [meetingsKey, setMeetingsKey] = useState(0);
-    const { save, saveState, optimisticStatus, toasts, dismissToast } = useSaveStatus();
+    const { user, profile, team } = useAuth();
+    const { save, toasts, dismissToast } = useSaveStatus();
+
+    const [currentStatus, setCurrentStatus] = useState<UserStatus | null>(null);
+    const [nextMeeting, setNextMeeting] = useState<Meeting | null>(null);
+    const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+    const [isLoadingMeeting, setIsLoadingMeeting] = useState(true);
+    const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+
+    const [showVoiceModal, setShowVoiceModal] = useState(false);
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [isTranscribing, setIsTranscribing] = useState(false);
 
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [showVoiceModal, setShowVoiceModal] = useState(false);
-    const [showInviteModal, setShowInviteModal] = useState(false);
-    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
-    const [updatingUserIds, setUpdatingUserIds] = useState<Set<string>>(new Set());
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showUserMenu, setShowUserMenu] = useState(false);
-    const [isSigningOut, setIsSigningOut] = useState(false);
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [quickSyncTarget, setQuickSyncTarget] = useState<QuickSyncTarget | null>(null);
-    const [showGroupModal, setShowGroupModal] = useState(false);
 
-    // Redirect to landing page if not authenticated
-    useEffect(() => {
-        if (!authLoading && !user) {
-            router.replace('/');
-        }
-    }, [authLoading, user, router]);
-
-    const currentDate = new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-    });
-
-    const filteredMembers = teamMembers.filter(member =>
-        member.user.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const fetchTeamData = useCallback(async () => {
-        if (!team?.id) {
-            setIsLoading(false);
-            return [];
-        }
+    // Fetch current user's status
+    const fetchStatus = useCallback(async () => {
+        if (!user?.id) return;
 
         const supabase = createSupabaseBrowserClient();
+        const { data } = await supabase
+            .from('user_status')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
 
-        try {
-            const { data: users, error: usersError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('team_id', team.id);
+        setCurrentStatus(data);
+        setIsLoadingStatus(false);
+    }, [user?.id]);
 
-            if (usersError || !users) {
-                console.error('Failed to fetch team members:', usersError);
-                return [];
-            }
+    // Fetch next meeting
+    const fetchNextMeeting = useCallback(async () => {
+        if (!user?.id) return;
 
+        const supabase = createSupabaseBrowserClient();
+        const now = new Date().toISOString();
+
+        const { data } = await supabase
+            .from('meetings')
+            .select('*')
+            .or(`organizer_id.eq.${user.id},participant_id.eq.${user.id}`)
+            .gte('start_time', now)
+            .order('start_time', { ascending: true })
+            .limit(1)
+            .single();
+
+        setNextMeeting(data);
+        setIsLoadingMeeting(false);
+    }, [user?.id]);
+
+    // Check calendar connection
+    const checkCalendarConnection = useCallback(async () => {
+        if (!user?.id) return;
+
+        const supabase = createSupabaseBrowserClient();
+        const { data } = await supabase
+            .from('calendar_connections')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        setCalendarConnected(!!data);
+    }, [user?.id]);
+
+    // Fetch team members for group modal
+    const fetchTeamMembers = useCallback(async () => {
+        if (!team?.id) return;
+
+        const supabase = createSupabaseBrowserClient();
+        const { data: users } = await supabase
+            .from('users')
+            .select('*')
+            .eq('team_id', team.id);
+
+        if (users) {
             const userIds = users.map((u: User) => u.id);
             const { data: statuses } = await supabase
                 .from('user_status')
@@ -91,90 +117,118 @@ export default function DashboardPage() {
                 status: (statuses as UserStatus[] | null)?.find((s: UserStatus) => s.user_id === u.id) || null,
             }));
 
-            const statusOrder: Record<string, number> = { green: 0, yellow: 1, red: 2 };
-            members.sort((a, b) => {
-                const aOrder = a.status?.status_color ? statusOrder[a.status.status_color] : 3;
-                const bOrder = b.status?.status_color ? statusOrder[b.status.status_color] : 3;
-                return aOrder - bOrder;
-            });
-
-            return members;
-        } catch (error) {
-            console.error('Failed to fetch team data:', error);
-            return [];
+            setTeamMembers(members);
         }
     }, [team?.id]);
 
+    // Initial data fetch
     useEffect(() => {
-        async function loadData() {
-            setIsLoading(true);
-            const members = await fetchTeamData();
-            setTeamMembers(members);
-            setIsLoading(false);
+        fetchStatus();
+        fetchNextMeeting();
+        checkCalendarConnection();
+        fetchTeamMembers();
+    }, [fetchStatus, fetchNextMeeting, checkCalendarConnection, fetchTeamMembers]);
+
+    // Auto-refresh status every 30s
+    useEffect(() => {
+        const interval = setInterval(fetchStatus, 30000);
+        return () => clearInterval(interval);
+    }, [fetchStatus]);
+
+    // Auto-refresh meetings every 60s
+    useEffect(() => {
+        const interval = setInterval(fetchNextMeeting, 60000);
+        return () => clearInterval(interval);
+    }, [fetchNextMeeting]);
+
+    // Handle voice recording complete - only transcribe, don't save yet
+    const handleRecordingComplete = async (audioBlob: Blob) => {
+        setIsTranscribing(true);
+
+        try {
+            // Convert blob to base64
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+                reader.onloadend = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    resolve(base64);
+                };
+            });
+            reader.readAsDataURL(audioBlob);
+            const base64Audio = await base64Promise;
+
+            // Send to transcription API
+            const transcribeResponse = await fetch('/api/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audio: base64Audio,
+                    mimeType: 'audio/webm;codecs=opus'
+                }),
+            });
+
+            const transcribeData = await transcribeResponse.json();
+
+            if (transcribeData.transcript) {
+                // Just set the transcript - user will confirm before saving
+                setTranscript(transcribeData.transcript);
+            } else if (transcribeData.error) {
+                console.error('Transcription error:', transcribeData.error);
+                alert('Could not transcribe audio: ' + (transcribeData.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error transcribing:', error);
+            alert('Error transcribing audio. Please try again.');
+        } finally {
+            setIsTranscribing(false);
         }
-        loadData();
-    }, [fetchTeamData]);
+    };
 
-    useEffect(() => {
-        if (!team?.id || teamMembers.length === 0) return;
+    // Handle user confirming the transcript
+    const handleConfirmTranscript = async (editedTranscript: string) => {
+        setIsTranscribing(true);
 
-        const userIds = teamMembers.map(m => m.user.id);
+        try {
+            // Parse the status from the (potentially edited) transcript
+            const parseResponse = await fetch('/api/parse-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript: editedTranscript }),
+            });
 
-        const { unsubscribe } = subscribeToTeamStatuses(userIds, {
-            onStatusChange: (payload) => {
-                const eventType = payload.eventType;
-                const newStatus = payload.new as UserStatus;
-                const oldStatus = payload.old as UserStatus;
+            const parseData = await parseResponse.json();
 
-                if (eventType === 'INSERT' || eventType === 'UPDATE') {
-                    setUpdatingUserIds(prev => new Set(prev).add(newStatus.user_id));
+            if (parseData.data) {
+                // Save the status
+                const success = await save({
+                    tasks: parseData.data.tasks || [],
+                    busy_blocks: parseData.data.busy_blocks || [],
+                    free_after: parseData.data.free_after,
+                    free_until: parseData.data.free_until,
+                    blockers: parseData.data.blockers || [],
+                    raw_transcript: editedTranscript,
+                    confidence_score: parseData.data.confidence?.overall || 1,
+                });
 
-                    setTeamMembers(prev => {
-                        const updated = prev.map(member => {
-                            if (member.user.id === newStatus.user_id) {
-                                return { ...member, status: newStatus };
-                            }
-                            return member;
-                        });
-
-                        const statusOrder: Record<string, number> = { green: 0, yellow: 1, red: 2 };
-                        updated.sort((a, b) => {
-                            const aOrder = a.status?.status_color ? statusOrder[a.status.status_color] : 3;
-                            const bOrder = b.status?.status_color ? statusOrder[b.status.status_color] : 3;
-                            return aOrder - bOrder;
-                        });
-
-                        return updated;
-                    });
-
-                    setTimeout(() => {
-                        setUpdatingUserIds(prev => {
-                            const next = new Set(prev);
-                            next.delete(newStatus.user_id);
-                            return next;
-                        });
-                    }, 1500);
-                } else if (eventType === 'DELETE') {
-                    setTeamMembers(prev =>
-                        prev.map(member => {
-                            if (member.user.id === (oldStatus as UserStatus).user_id) {
-                                return { ...member, status: null };
-                            }
-                            return member;
-                        })
-                    );
+                if (success) {
+                    setTranscript(''); // Clear after successful save
+                    await fetchStatus();
                 }
-            },
-            onConnectionChange: (status) => {
-                setConnectionStatus(status);
-            },
-        });
+            }
+        } catch (error) {
+            console.error('Error saving status:', error);
+            alert('Error saving status. Please try again.');
+        } finally {
+            setIsTranscribing(false);
+        }
+    };
 
-        return () => {
-            unsubscribe();
-        };
-    }, [team?.id, teamMembers.length > 0]);
+    // Handle user canceling the transcript
+    const handleCancelTranscript = () => {
+        setTranscript('');
+    };
 
+    // Handle voice flow complete (from modal)
     const handleVoiceComplete = async (data: {
         tasks: string[];
         busy_blocks: { start: string; end: string; label: string }[];
@@ -196,317 +250,144 @@ export default function DashboardPage() {
 
         if (success) {
             setShowVoiceModal(false);
-            const members = await fetchTeamData();
-            setTeamMembers(members);
+            setTranscript(data.raw_transcript);
+            await fetchStatus();
         }
     };
 
-    const handleQuickSync = (userId: string) => {
-        // Don't allow quick sync with yourself
-        if (userId === user?.id) {
-            console.log('Cannot quick sync with yourself');
-            return;
-        }
-        
-        // Find the target user
-        const targetMember = teamMembers.find(m => m.user.id === userId);
-        if (targetMember) {
-            setQuickSyncTarget({
-                user: targetMember.user,
-                status: targetMember.status,
-            });
-        }
-    };
-
+    // Handle meeting created
     const handleMeetingCreated = async () => {
-        // Refresh team data and meetings list after meeting is created
-        const members = await fetchTeamData();
-        setTeamMembers(members);
-        setMeetingsKey(prev => prev + 1); // Trigger meetings list refresh
+        await fetchNextMeeting();
+        await fetchTeamMembers();
     };
 
-    const handleMeetingDeleted = async () => {
-        // Refresh team data (for status cards) and meetings list after deletion
-        const members = await fetchTeamData();
-        setTeamMembers(members);
-        setMeetingsKey(prev => prev + 1);
+    // Calculate status color
+    const getStatusColor = (): 'green' | 'yellow' | 'red' => {
+        if (!currentStatus) return 'green';
+        return currentStatus.status_color || 'green';
     };
 
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
+    // Get busy blocks from status
+    const getBusyBlocks = () => {
+        if (!currentStatus?.busy_blocks) return [];
+        return currentStatus.busy_blocks as { start: string; end: string; label?: string }[];
     };
-
-    // Show loading screen while checking auth (AFTER all hooks)
-    if (authLoading) {
-        return (
-            <div className="min-h-screen bg-[#13141C] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl animate-pulse">
-                        S
-                    </div>
-                    <p className="text-slate-400 text-sm">Loading...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Don't render dashboard if not authenticated (will redirect)
-    if (!user) {
-        return null;
-    }
 
     return (
-        <div className="min-h-screen bg-[#13141C]"> {/* Slightly darker background */}
-            {/* Header */}
-            <header className="border-b border-[#232436] bg-[#1a1b26]">
-                <div className="max-w-7xl mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between gap-6">
-                        {/* Logo */}
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-purple-500/20">
-                                S
+        <div>
+            {/* Calendar Connection Banner */}
+            {calendarConnected === false && (
+                <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl">📅</span>
+                        <span className="text-[#1F2937]">
+                            Connect your calendar to auto-sync meetings
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => setShowVoiceModal(true)}
+                        className="px-4 py-2 bg-[#6366F1] text-white rounded-xl text-sm font-medium hover:bg-[#5558E3] transition-colors"
+                    >
+                        Connect Calendar
+                    </button>
+                </div>
+            )}
+
+            {/* Page Title */}
+            <h1 className="text-2xl font-bold text-[#1F2937] mb-6">Dashboard</h1>
+
+            {/* 12-Column Grid Layout */}
+            <div className="grid grid-cols-12 gap-6">
+                {/* Left Column - 8 columns */}
+                <div className="col-span-12 lg:col-span-8 space-y-6">
+                    {/* Speak Your Day Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Your Day</h2>
+                        <SpeakYourDayCard
+                            onRecordingComplete={handleRecordingComplete}
+                            transcript={transcript}
+                            isTranscribing={isTranscribing}
+                            onConfirmTranscript={handleConfirmTranscript}
+                            onCancelTranscript={handleCancelTranscript}
+                        />
+                    </div>
+
+                    {/* Your Status Today Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Status Today</h2>
+                        <StatusTodayCard
+                            statusColor={getStatusColor()}
+                            busyBlocks={getBusyBlocks()}
+                            freeAfter={currentStatus?.free_after?.toString() || null}
+                            timezone="IST"
+                        />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <ActionButtons onScheduleGroupMeeting={() => setShowGroupModal(true)} />
+                    </div>
+                </div>
+
+                {/* Right Column - 4 columns */}
+                <div className="col-span-12 lg:col-span-4 space-y-6">
+                    {/* Next Up Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Next Up</h2>
+                        <NextUpCard meeting={nextMeeting} isLoading={isLoadingMeeting} />
+                    </div>
+
+                    {/* Quick Actions Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Quick Actions</h2>
+                        <QuickActionsCard onScheduleGroupMeeting={() => setShowGroupModal(true)} />
+                    </div>
+
+                    {/* Team Summary Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-[#1F2937] mb-4">Team</h2>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Team Members</span>
+                                <span className="font-medium text-[#1F2937]">{teamMembers.length}</span>
                             </div>
-                            <span className="text-xl font-bold text-white tracking-tight">Sync</span>
-                        </div>
-
-                        {/* Search Bar - styled to match Image */}
-                        <div className="flex-1 max-w-lg">
-                            <div className="relative group">
-                                <svg
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-purple-400 transition-colors"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    placeholder="Search team members..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#232436] border border-transparent focus:border-[#3d3e54] text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-all font-medium"
-                                />
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Available Now</span>
+                                <span className="font-medium text-green-600">
+                                    {teamMembers.filter(m => m.status?.status_color === 'green').length}
+                                </span>
                             </div>
-                        </div>
-
-                        {/* Right Actions */}
-                        <div className="flex items-center gap-3">
-                            {/* Update My Day Button */}
-                            <button
-                                onClick={() => setShowVoiceModal(true)}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold transition-all shadow-lg shadow-purple-600/20 active:scale-[0.98]"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                </svg>
-                                Update My Day
-                            </button>
-
-                            {/* Schedule Group Meeting Button */}
-                            {team && teamMembers.length > 1 && (
-                                <button
-                                    onClick={() => setShowGroupModal(true)}
-                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#232436] hover:bg-[#2a2b3d] text-white font-medium transition-all border border-[#3a3b4d]"
-                                    title="Schedule Group Meeting"
-                                >
-                                    <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    Group Meeting
-                                </button>
-                            )}
-
-                            {/* Meetings Tab Button */}
-                            <button
-                                onClick={() => router.push('/dashboard/meetings')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#232436] hover:bg-[#2a2b3d] text-white font-medium transition-all border border-[#3a3b4d]"
-                                title="View All Meetings"
-                            >
-                                <svg className="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                Meetings
-                            </button>
-
-                            <div className="w-px h-8 bg-[#232436] mx-1" />
-
-                            {/* Invite Button */}
-                            {team && (
-                                <button
-                                    onClick={() => setShowInviteModal(true)}
-                                    className="p-2.5 rounded-xl text-slate-400 hover:bg-[#232436] hover:text-white transition-colors"
-                                    title="Invite Team"
-                                >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                    </svg>
-                                </button>
-                            )}
-
-                            {/* Settings */}
-                            <button
-                                onClick={() => setShowSettingsModal(true)}
-                                className="p-2.5 rounded-xl text-slate-400 hover:bg-[#232436] hover:text-white transition-colors"
-                                title="Settings"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
-
-                            {/* User Avatar with Dropdown */}
-                            {user && (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs border-2 border-[#1a1b26] ring-2 ring-[#232436] hover:ring-purple-500/50 transition-all cursor-pointer"
-                                    >
-                                        {getInitials(profile?.name || user.email?.split('@')[0] || 'U')}
-                                    </button>
-
-                                    {/* Dropdown Menu */}
-                                    {showUserMenu && (
-                                        <>
-                                            {/* Backdrop to close menu */}
-                                            <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={() => setShowUserMenu(false)}
-                                            />
-                                            <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#1E1F2E] border border-[#232436] shadow-xl z-50 overflow-hidden">
-                                                {/* User Info */}
-                                                <div className="p-4 border-b border-[#232436]">
-                                                    <p className="text-sm font-medium text-white truncate">{profile?.name || user.email?.split('@')[0] || 'User'}</p>
-                                                    <p className="text-xs text-slate-400 truncate">{profile?.email || user.email}</p>
-                                                </div>
-
-                                                {/* Menu Items */}
-                                                <div className="p-2">
-                                                    <button
-                                                        onClick={async () => {
-                                                            setIsSigningOut(true);
-                                                            await signOut();
-                                                            router.push('/');
-                                                        }}
-                                                        disabled={isSigningOut}
-                                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                        </svg>
-                                                        {isSigningOut ? 'Signing out...' : 'Sign Out'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Busy</span>
+                                <span className="font-medium text-yellow-600">
+                                    {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-6 py-8">
-                {/* Date */}
-                <h2 className="text-slate-500 text-sm font-medium mb-6 uppercase tracking-wider pl-1">{currentDate}</h2>
-
-                {/* Loading State */}
-                {isLoading && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="h-64 rounded-xl border border-[#232436] bg-[#1E1F2E] p-5 animate-pulse">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-full bg-[#2a2b3d]" />
-                                    <div className="flex-1">
-                                        <div className="h-4 bg-[#2a2b3d] rounded w-24 mb-2" />
-                                        <div className="h-3 bg-[#2a2b3d] rounded w-20" />
-                                    </div>
-                                </div>
-                                <div className="h-3 bg-[#2a2b3d] rounded w-3/4 mb-3" />
-                                <div className="h-3 bg-[#2a2b3d] rounded w-1/2 mb-6" />
-                                <div className="h-12 bg-[#2a2b3d] rounded-lg w-full" />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Empty State - No Team */}
-                {!isLoading && !team && (
-                    <div className="rounded-2xl border border-dashed border-[#232436] bg-[#1E1F2E]/50 p-20 text-center max-w-2xl mx-auto mt-10">
-                        <div className="w-20 h-20 mx-auto rounded-full bg-[#232436] flex items-center justify-center mb-6">
-                            <svg className="w-10 h-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-semibold text-white mb-2">No team yet</h3>
-                        <p className="text-slate-400 mb-8 max-w-sm mx-auto">
-                            Create or join a team to start sharing status updates with your teammates.
-                        </p>
-                    </div>
-                )}
-
-                {/* Team Members Grid */}
-                {!isLoading && filteredMembers.length >= 1 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredMembers.map((member) => {
-                            const isCurrentUser = member.user.id === user?.id;
-                            const displayStatus = isCurrentUser && optimisticStatus
-                                ? optimisticStatus
-                                : member.status;
-
-                            return (
-                                <div key={member.user.id} className="h-full">
-                                    <StatusCard
-                                        user={member.user}
-                                        status={displayStatus}
-                                        onQuickSync={handleQuickSync}
-                                        isUpdating={updatingUserIds.has(member.user.id)}
-                                        saveState={isCurrentUser ? saveState : 'idle'}
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* No Search Results */}
-                {!isLoading && teamMembers.length > 0 && filteredMembers.length === 0 && (
-                    <div className="text-center py-20">
-                        <div className="w-16 h-16 rounded-full bg-[#1E1F2E] flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <p className="text-slate-500 text-lg">No one found matching &quot;{searchQuery}&quot;</p>
-                    </div>
-                )}
-            </main>
+            </div>
 
             {/* Voice Input Modal */}
             {showVoiceModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/50"
                         onClick={() => setShowVoiceModal(false)}
                     />
-
-                    <div className="relative bg-[#1a1b26] rounded-2xl border border-[#232436] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
-                        <div className="flex items-center justify-between p-5 border-b border-[#232436]">
+                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between p-5 border-b border-gray-200">
                             <div>
-                                <h2 className="text-lg font-semibold text-white">Update Your Status</h2>
-                                <p className="text-sm text-slate-400 mt-0.5">Tell your team what you&apos;re working on</p>
+                                <h2 className="text-lg font-semibold text-[#1F2937]">
+                                    Update Your Status
+                                </h2>
+                                <p className="text-sm text-[#6B7280] mt-0.5">
+                                    Tell your team what you&apos;re working on
+                                </p>
                             </div>
                             <button
                                 onClick={() => setShowVoiceModal(false)}
-                                className="p-2 rounded-lg hover:bg-[#232436] text-slate-400 hover:text-white transition-colors"
+                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -521,57 +402,6 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* Invite Modal */}
-            {team && (
-                <InviteModal
-                    isOpen={showInviteModal}
-                    onClose={() => setShowInviteModal(false)}
-                    teamName={team.name}
-                    inviteCode={team.invite_code}
-                />
-            )}
-
-            {/* Settings Modal */}
-            {showSettingsModal && user && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                        onClick={() => setShowSettingsModal(false)}
-                    />
-                    <div className="relative bg-[#1a1b26] rounded-2xl border border-[#232436] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
-                        <div className="flex items-center justify-between p-5 border-b border-[#232436]">
-                            <div>
-                                <h2 className="text-lg font-semibold text-white">Settings</h2>
-                                <p className="text-sm text-slate-400 mt-0.5">Manage your integrations and preferences</p>
-                            </div>
-                            <button
-                                onClick={() => setShowSettingsModal(false)}
-                                className="p-2 rounded-lg hover:bg-[#232436] text-slate-400 hover:text-white transition-colors"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">
-                            <CalendarConnection userId={user.id} />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Quick Sync Modal */}
-            {quickSyncTarget && user && (
-                <QuickSyncModal
-                    isOpen={!!quickSyncTarget}
-                    onClose={() => setQuickSyncTarget(null)}
-                    currentUserId={user.id}
-                    targetUser={quickSyncTarget.user}
-                    targetUserStatus={quickSyncTarget.status}
-                    onMeetingCreated={handleMeetingCreated}
-                />
             )}
 
             {/* Group Scheduling Modal */}

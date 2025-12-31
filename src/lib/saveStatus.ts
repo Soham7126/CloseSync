@@ -1,4 +1,4 @@
-import { createSupabaseBrowserClient } from './supabase';
+import { createBrowserClient } from '@supabase/ssr';
 import type { BusyBlock } from './supabase';
 
 export interface ParsedStatusData {
@@ -113,7 +113,10 @@ export async function saveStatus(
     data: ParsedStatusData
 ): Promise<SaveStatusResult> {
     try {
-        const supabase = createSupabaseBrowserClient();
+        // Use untyped client to avoid Database schema type inference issues
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
         // Calculate status color
         const statusColor = calculateStatusColor(
@@ -122,9 +125,8 @@ export async function saveStatus(
             data.free_after
         );
 
-        // Prepare the status record
-        const statusRecord = {
-            user_id: userId,
+        // Prepare the status record for update
+        const updateRecord = {
             tasks: data.tasks,
             busy_blocks: data.busy_blocks,
             free_after: data.free_after,
@@ -133,46 +135,56 @@ export async function saveStatus(
             status_color: statusColor,
             raw_transcript: data.raw_transcript,
             confidence_score: data.confidence_score ?? 1.0,
-            last_updated: new Date().toISOString(),
         };
 
         // Check if status exists for this user
-        const { data: existingStatus } = await supabase
+        const existingResult = await supabase
             .from('user_status')
             .select('id')
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
-        let result;
+        const existingStatus = existingResult.data;
+        let resultData: { id: string } | null = null;
+        let resultError: { message: string } | null = null;
 
         if (existingStatus) {
             // Update existing status
-            result = await supabase
+            const updateResult = await supabase
                 .from('user_status')
-                .update(statusRecord)
+                .update(updateRecord)
                 .eq('user_id', userId)
-                .select()
+                .select('id')
                 .single();
+
+            resultData = updateResult.data as { id: string } | null;
+            resultError = updateResult.error as { message: string } | null;
         } else {
-            // Insert new status
-            result = await supabase
+            // Insert new status (includes user_id)
+            const insertResult = await supabase
                 .from('user_status')
-                .insert(statusRecord)
-                .select()
+                .insert({
+                    ...updateRecord,
+                    user_id: userId,
+                })
+                .select('id')
                 .single();
+
+            resultData = insertResult.data as { id: string } | null;
+            resultError = insertResult.error as { message: string } | null;
         }
 
-        if (result.error) {
-            console.error('Save status error:', result.error);
+        if (resultError) {
+            console.error('Save status error:', resultError);
             return {
                 success: false,
-                error: result.error.message,
+                error: resultError.message,
             };
         }
 
         return {
             success: true,
-            statusId: result.data?.id,
+            statusId: resultData?.id,
         };
     } catch (error) {
         console.error('Save status error:', error);
@@ -188,7 +200,9 @@ export async function saveStatus(
  */
 export async function fetchTeamStatuses(teamId: string) {
     try {
-        const supabase = createSupabaseBrowserClient();
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+        const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
         const { data, error } = await supabase
             .from('team_members_status')

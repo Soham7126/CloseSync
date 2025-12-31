@@ -145,11 +145,13 @@ export async function POST(request: NextRequest) {
         // Initialize OpenAI client
         const openai = new OpenAI({ apiKey });
 
-        // Send to Whisper API
+        // Send to Whisper API with a context prompt for better accuracy
         const transcription = await openai.audio.transcriptions.create({
             file,
             model: 'whisper-1',
             response_format: 'json',
+            language: 'en',
+            prompt: 'This is a voice note about someone\'s work schedule, meetings, tasks, and availability. Common phrases include: meeting at, busy from, free after, working on, call with, standup, sync, available, appointment, deadline.',
         });
 
         return NextResponse.json(

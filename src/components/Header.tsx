@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 
@@ -29,11 +30,15 @@ export default function Header() {
         <>
             <header className="border-b border-border bg-background">
                 <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-                    <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                            S
-                        </div>
-                        <span className="text-xl font-semibold tracking-tight">Sync</span>
+                    <Link href={user ? "/dashboard" : "/"} className="flex items-center">
+                        <Image
+                            src="/logo.png"
+                            alt="CloseSync"
+                            width={160}
+                            height={40}
+                            className="h-9 w-auto"
+                            priority
+                        />
                     </Link>
 
                     <div className="flex items-center gap-6">
