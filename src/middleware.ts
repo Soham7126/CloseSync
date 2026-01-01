@@ -6,6 +6,18 @@ import { createServerClient } from '@supabase/ssr';
 const publicRoutes = ['/', '/login', '/signup', '/join'];
 
 export async function middleware(request: NextRequest) {
+    // Skip RSC payloads and internal Next.js requests
+    const { pathname } = request.nextUrl;
+    
+    // Skip internal RSC and prefetch requests
+    if (
+        pathname.includes('_rsc') ||
+        request.headers.get('RSC') === '1' ||
+        request.headers.get('Next-Router-Prefetch') === '1'
+    ) {
+        return NextResponse.next();
+    }
+
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -21,7 +33,7 @@ export async function middleware(request: NextRequest) {
                     return request.cookies.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => {
+                    cookiesToSet.forEach(({ name, value }) => {
                         request.cookies.set(name, value);
                     });
                     response = NextResponse.next({
@@ -38,23 +50,23 @@ export async function middleware(request: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
 
     const isPublicRoute = publicRoutes.some(
-        (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(route + '/')
+        (route) => pathname === route || pathname.startsWith(route + '/')
     );
 
     // Landing page (/) - allow access for everyone
-    if (request.nextUrl.pathname === '/') {
+    if (pathname === '/') {
         return response;
     }
 
     // Redirect to login if not authenticated and trying to access protected route
     if (!session && !isPublicRoute) {
         const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+        loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
     }
 
     // Redirect to dashboard if authenticated and trying to access login/signup
-    if (session && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+    if (session && (pathname === '/login' || pathname === '/signup')) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
@@ -65,12 +77,11 @@ export const config = {
     matcher: [
         /*
          * Match all request paths except:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public folder
+         * - _next (all Next.js internals)
+         * - favicon.ico
+         * - public assets
          * - api routes
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api).*)',
+        '/((?!_next|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$|api).*)',
     ],
 };

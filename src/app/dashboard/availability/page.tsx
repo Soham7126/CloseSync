@@ -131,7 +131,7 @@ export default function AvailabilityPage() {
         return () => {
             unsubscribe();
         };
-    }, [team?.id, teamMembers.length > 0]);
+    }, [team?.id, teamMembers.length]);
 
     const handleQuickSync = (userId: string) => {
         if (userId === user?.id) return;
@@ -155,92 +155,100 @@ export default function AvailabilityPage() {
     );
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-white">
+            {/* Main Content Container - Reserves space for 72px sidebar + 64px gutter */}
+            <div className="pl-[136px] pr-12 pt-12">
+                
+                {/* Centered Content Area */}
+                <div className="max-w-7xl">
+                    
+                    {/* Search Bar Row - Isolated from cards */}
+                    <div className="mb-16">
+                        <div className="relative w-full max-w-2xl">
+                            <input
+                                type="text"
+                                placeholder="Search team members..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full h-12 pl-12 pr-6 rounded-full bg-white border-2 border-[#E5E7EB] text-[#1F2937] placeholder-[#6B7280] focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/10 transition-all duration-200"
+                            />
+                        </div>
+                    </div>
 
-            {/* Connection Status */}
-            {connectionStatus !== 'connected' && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                    {connectionStatus === 'connecting' ? 'Connecting to real-time updates...' : 'Connection lost. Reconnecting...'}
-                </div>
-            )}
+                    {/* Connection Status Banner */}
+                    {connectionStatus !== 'connected' && (
+                        <div className="mb-16">
+                            <div className="p-4 bg-[#FFF7ED] border border-[#FDBA74] rounded-lg text-sm text-[#92400E] flex items-center gap-3 max-w-2xl">
+                                <div className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse flex-shrink-0" />
+                                <span>
+                                    {connectionStatus === 'connecting' ? 'Connecting to real-time updates...' : 'Connection lost. Reconnecting...'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
-            {/* Search */}
-            <div className="mb-6">
-                <div className="relative max-w-md">
-                    <svg
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                        type="text"
-                        placeholder="Search team members..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20 focus:border-[#6366F1] transition-all"
-                    />
+                    {/* Loading State */}
+                    {isLoading && (
+                        <div className="grid grid-cols-2 gap-6">
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="bg-white border border-[#E5E7EB] rounded-[18px] p-6 space-y-4 animate-pulse">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-14 h-14 rounded-full bg-[#E5E7EB] flex-shrink-0" />
+                                        <div className="flex-1">
+                                            <div className="h-5 bg-[#E5E7EB] rounded-lg w-32 mb-3" />
+                                            <div className="h-4 bg-[#E5E7EB] rounded-lg w-24" />
+                                        </div>
+                                    </div>
+                                    <div className="h-4 bg-[#E5E7EB] rounded-lg w-full" />
+                                    <div className="h-4 bg-[#E5E7EB] rounded-lg w-3/4" />
+                                    <div className="pt-4 border-t border-[#E5E7EB]">
+                                        <div className="h-4 bg-[#E5E7EB] rounded-lg w-1/2" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* No Team State */}
+                    {!isLoading && !team && (
+                        <div className="bg-white rounded-[18px] border border-[#E5E7EB] p-16 text-center max-w-2xl">
+                            <div className="w-20 h-20 mx-auto rounded-full bg-[#FFF7ED] flex items-center justify-center mb-8">
+                                <svg className="w-10 h-10 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold text-[#1F2937] mb-3">No team yet</h3>
+                            <p className="text-[#6B7280] text-base">Create or join a team to see availability.</p>
+                        </div>
+                    )}
+
+                    {/* Team Members Grid - 2 Columns with 24px gap, 64px from search */}
+                    {!isLoading && filteredMembers.length > 0 && (
+                        <div className="grid grid-cols-2 gap-6">
+                            {filteredMembers.map((member) => (
+                                <StatusCard
+                                    key={member.user.id}
+                                    user={member.user}
+                                    status={member.status}
+                                    onQuickSync={handleQuickSync}
+                                    isUpdating={updatingUserIds.has(member.user.id)}
+                                    saveState="idle"
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* No Search Results */}
+                    {!isLoading && teamMembers.length > 0 && filteredMembers.length === 0 && (
+                        <div className="text-center py-20">
+                            <svg className="w-16 h-16 mx-auto mb-6 text-[#E5E7EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <p className="text-[#6B7280] text-lg">No one found matching &quot;{searchQuery}&quot;</p>
+                        </div>
+                    )}
                 </div>
             </div>
-
-            {/* Loading State */}
-            {isLoading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-64 rounded-xl border border-gray-200 bg-white p-5 animate-pulse">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                                <div className="flex-1">
-                                    <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-                                    <div className="h-3 bg-gray-200 rounded w-20" />
-                                </div>
-                            </div>
-                            <div className="h-3 bg-gray-200 rounded w-3/4 mb-3" />
-                            <div className="h-3 bg-gray-200 rounded w-1/2 mb-6" />
-                            <div className="h-12 bg-gray-200 rounded-lg w-full" />
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* No Team */}
-            {!isLoading && !team && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-[#1F2937] mb-2">No team yet</h3>
-                    <p className="text-[#6B7280]">Create or join a team to see availability.</p>
-                </div>
-            )}
-
-            {/* Team Members Grid */}
-            {!isLoading && filteredMembers.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredMembers.map((member) => (
-                        <StatusCard
-                            key={member.user.id}
-                            user={member.user}
-                            status={member.status}
-                            onQuickSync={handleQuickSync}
-                            isUpdating={updatingUserIds.has(member.user.id)}
-                            saveState="idle"
-                        />
-                    ))}
-                </div>
-            )}
-
-            {/* No Search Results */}
-            {!isLoading && teamMembers.length > 0 && filteredMembers.length === 0 && (
-                <div className="text-center py-12">
-                    <p className="text-[#6B7280]">No one found matching &quot;{searchQuery}&quot;</p>
-                </div>
-            )}
 
             {/* Quick Sync Modal */}
             {quickSyncTarget && user && (

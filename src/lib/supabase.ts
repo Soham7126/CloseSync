@@ -83,8 +83,15 @@ export interface Database {
 const getSupabaseUrl = () => process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const getSupabaseAnonKey = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Browser client (for client components)
+// Singleton browser client instance
+let browserClient: ReturnType<typeof createBrowserClient<Database>> | null = null;
+
+// Browser client (for client components) - singleton pattern
 export function createSupabaseBrowserClient() {
+    if (browserClient) {
+        return browserClient;
+    }
+
     const supabaseUrl = getSupabaseUrl();
     const supabaseAnonKey = getSupabaseAnonKey();
 
@@ -92,7 +99,8 @@ export function createSupabaseBrowserClient() {
         console.warn('Supabase environment variables not configured');
     }
 
-    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+    browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+    return browserClient;
 }
 
 // Server client (for server components, API routes)

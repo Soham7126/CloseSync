@@ -284,7 +284,7 @@ export default function DashboardPage() {
                         </span>
                     </div>
                     <button
-                        onClick={() => setShowVoiceModal(true)}
+                        onClick={() => window.location.href = '/api/auth/google'}
                         className="btn btn-primary"
                     >
                         Connect Calendar
