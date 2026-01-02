@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import Link from 'next/link';
+import Image from 'next/image';
 
 interface DashboardHeaderProps {
     onOpenInvite?: () => void;
@@ -11,10 +13,25 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: DashboardHeaderProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const { user, profile, signOut } = useAuth();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showTeamDropdown, setShowTeamDropdown] = useState(false);
     const [isSigningOut, setIsSigningOut] = useState(false);
+
+    const navItems = [
+        { name: 'Dashboard', href: '/dashboard' },
+        { name: 'Availability', href: '/dashboard/availability' },
+        { name: 'Calendar', href: '/dashboard/schedule' },
+        { name: 'Settings', href: '/dashboard/settings' },
+    ];
+
+    const isActive = (href: string) => {
+        if (href === '/dashboard') {
+            return pathname === '/dashboard';
+        }
+        return pathname.startsWith(href);
+    };
 
     const getInitials = (name: string) => {
         return name
@@ -32,26 +49,60 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
     };
 
     return (
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-end px-8 lg:px-12">
-            {/* Right Actions - Profile and Team */}
-            <div className="flex items-center gap-4">
+        <header className="h-16 bg-transparent flex items-center px-6 lg:px-16 xl:px-24">
+            {/* Logo - Left */}
+            <div className="flex-shrink-0">
+                <Image
+                    src="/logo.png"
+                    alt="CloseSync"
+                    width={140}
+                    height={36}
+                    className="h-8 w-auto"
+                    priority
+                />
+            </div>
+
+            {/* Navigation Items - Center */}
+            <nav className="hidden lg:flex items-center gap-6 flex-1 justify-center ml-12">
+                {navItems.map((item) => {
+                    const active = isActive(item.href);
+                    return (
+                        <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                                active
+                                    ? 'text-[#FF8C42] bg-[#FFF7ED]'
+                                    : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                        >
+                            {item.name}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* Right Actions - Notification, Team, Profile */}
+            <div className="flex items-center gap-3 ml-auto">
+                
+
                 {/* Team Icon */}
                 <div className="relative">
                     <button
                         onClick={() => setShowTeamDropdown(!showTeamDropdown)}
-                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors relative"
+                        className="p-2 rounded-lg text-gray-500 hover:bg-[#FFF7ED] transition-colors relative"
                         aria-label="Team members"
                     >
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
                             />
                         </svg>
                         {teamMemberCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#6366F1] text-white text-xs font-medium rounded-full flex items-center justify-center">
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF8C42] text-white text-xs font-medium rounded-full flex items-center justify-center">
                                 {teamMemberCount}
                             </span>
                         )}
@@ -64,8 +115,8 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
                                 className="fixed inset-0 z-40"
                                 onClick={() => setShowTeamDropdown(false)}
                             />
-                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                                <div className="p-3 border-b border-gray-100">
+                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-[#FFE8D4] shadow-lg z-50 overflow-hidden">
+                                <div className="p-3 border-b border-[#FFE8D4]">
                                     <p className="text-sm font-medium text-gray-900">
                                         Team Members ({teamMemberCount})
                                     </p>
@@ -76,7 +127,7 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
                                             setShowTeamDropdown(false);
                                             onOpenInvite?.();
                                         }}
-                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#6366F1] hover:bg-[#6366F1]/5 transition-colors"
+                                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[#FF8C42] hover:bg-[#FFF7ED] transition-colors"
                                     >
                                         <svg
                                             className="w-4 h-4"
@@ -103,7 +154,7 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
                 <div className="relative">
                     <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+                        className="flex items-center gap-2 hover:bg-[#FFF7ED] rounded-lg px-2 py-1 transition-colors"
                     >
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-medium text-gray-900">
@@ -111,7 +162,7 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
                             </p>
                             <p className="text-xs text-gray-500">Super Admin</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-sm">
+                        <div className="w-10 h-10 rounded-full bg-[#FF8C42] flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
                             {getInitials(profile?.name || user?.email?.split('@')[0] || 'U')}
                         </div>
                     </button>
@@ -123,8 +174,8 @@ export default function DashboardHeader({ onOpenInvite, teamMemberCount = 0 }: D
                                 className="fixed inset-0 z-40"
                                 onClick={() => setShowUserMenu(false)}
                             />
-                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                                <div className="p-4 border-b border-gray-100">
+                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-[#FFE8D4] shadow-lg z-50 overflow-hidden">
+                                <div className="p-4 border-b border-[#FFE8D4]">
                                     <p className="text-sm font-medium text-gray-900 truncate">
                                         {profile?.name || user?.email?.split('@')[0] || 'User'}
                                     </p>

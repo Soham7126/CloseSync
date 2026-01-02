@@ -141,23 +141,23 @@ export default function SpeakYourDayCard({
     };
 
     return (
-        <div>
+        <div className="flex flex-col items-center">
             {/* Microphone Button */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4">
                 <button
                     onClick={handleMicClick}
                     disabled={isTranscribing || isEditing}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording
+                    className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 ${isRecording
                         ? 'bg-red-500 shadow-lg shadow-red-500/30 scale-110'
                         : isTranscribing || isEditing
                             ? 'bg-gray-100 cursor-not-allowed'
-                            : 'bg-gradient-to-b from-[#FFF7ED] to-[#FFEDD5] border-2 border-[#F97316] hover:scale-105 animate-subtle-pulse'
+                            : 'bg-transparent border-2 border-[#FF8C42] hover:scale-105 animate-subtle-pulse'
                         }`}
                     aria-label={isRecording ? 'Stop recording' : 'Start recording'}
                     aria-live="polite"
                 >
                     <svg
-                        className={`w-8 h-8 ${isRecording ? 'text-white animate-pulse' : 'text-[#F97316]'}`}
+                        className={`w-10 h-10 ${isRecording ? 'text-white animate-pulse' : 'text-[#FF8C42]'}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -165,7 +165,7 @@ export default function SpeakYourDayCard({
                         <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            strokeWidth={2}
+                            strokeWidth={1.5}
                             d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
                         />
                     </svg>
@@ -174,14 +174,14 @@ export default function SpeakYourDayCard({
 
             {/* Instruction Text */}
             {!isRecording && !isTranscribing && !isEditing && (
-                <p className="text-sm text-gray-400 text-center mb-6">
+                <p className="text-sm text-gray-500 text-center mb-4">
                     Tap the microphone to speak your status
                 </p>
             )}
 
             {/* Recording Indicator */}
             {isRecording && (
-                <div className="text-center mb-6">
+                <div className="text-center mb-4">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full">
                         <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         <span className="text-sm text-red-600 font-medium">Recording</span>
@@ -193,9 +193,9 @@ export default function SpeakYourDayCard({
 
             {/* Transcribing State */}
             {isTranscribing && (
-                <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                <div className="bg-[#FFF8F0] rounded-xl p-5 mb-4 w-full">
                     <div className="flex items-center justify-center gap-3 text-gray-500">
-                        <div className="w-5 h-5 border-2 border-[#F97316] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-[#FF8C42] border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm font-medium">Transcribing your speech...</span>
                     </div>
                 </div>
@@ -203,14 +203,14 @@ export default function SpeakYourDayCard({
 
             {/* Editable Transcript with Confirm/Cancel */}
             {isEditing && !isTranscribing && (
-                <div className="bg-gray-50 rounded-xl p-5 mb-6">
+                <div className="bg-[#FFF8F0] rounded-xl p-5 mb-4 w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                         Review & Edit Your Transcript
                     </label>
                     <textarea
                         value={editableTranscript}
                         onChange={(e) => setEditableTranscript(e.target.value)}
-                        className="w-full p-4 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#F97316]/20 focus:border-[#F97316]"
+                        className="w-full p-4 border border-[#FFE8D4] rounded-xl text-sm text-gray-900 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-[#FF8C42]/20 focus:border-[#FF8C42]"
                         rows={3}
                         placeholder="Edit your transcript if needed..."
                     />
@@ -236,13 +236,13 @@ export default function SpeakYourDayCard({
             )}
 
             {/* Waveform Visualization */}
-            <div className="flex items-center gap-1 justify-center h-12">
+            <div className="flex items-center gap-0.5 justify-center h-8 w-full max-w-xs">
                 {waveformBars.map((height, i) => (
                     <div
                         key={i}
-                        className={`w-1 rounded-full transition-all duration-100 ${isRecording ? 'bg-red-400' : 'bg-gray-200'
+                        className={`w-1 rounded-full transition-all duration-100 ${isRecording ? 'bg-red-400' : 'bg-[#FFE8D4]'
                             }`}
-                        style={{ height: `${height}%` }}
+                        style={{ height: `${Math.max(height * 0.5, 8)}%` }}
                     />
                 ))}
             </div>

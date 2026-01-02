@@ -276,7 +276,7 @@ export default function DashboardPage() {
         <div>
             {/* Calendar Connection Banner */}
             {calendarConnected === false && (
-                <div className="mb-8 p-5 bg-[#FFF7ED] border border-[#FDBA74] rounded-2xl flex items-center justify-between">
+                <div className="mb-8 p-5 bg-[#FFFBF7] border border-[#FFE8D4] rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-xl">📅</span>
                         <span className="text-gray-700">
@@ -292,97 +292,89 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* 12-Column Grid Layout */}
-            <div className="grid grid-cols-12 gap-8 lg:gap-12">
-                {/* Left Column - 8 columns */}
-                <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
-                    {/* Speak Your Day Card - Hero Card */}
-                    <div className="card-hero">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="w-2 h-2 rounded-full bg-[#F97316]" />
-                            <h2 className="text-lg font-semibold text-gray-900">Your Day</h2>
-                        </div>
-                        <SpeakYourDayCard
-                            onRecordingComplete={handleRecordingComplete}
-                            transcript={transcript}
-                            isTranscribing={isTranscribing}
-                            onConfirmTranscript={handleConfirmTranscript}
-                            onCancelTranscript={handleCancelTranscript}
-                        />
-                    </div>
-
-                    {/* Your Status Today Card - With tint */}
-                    <div className="card-status">
-                        <div className="flex items-center gap-2 mb-6">
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" />
-                            </svg>
-                            <h2 className="text-lg font-semibold text-gray-900">Status Today</h2>
-                        </div>
-                        <StatusTodayCard
-                            statusColor={getStatusColor()}
-                            busyBlocks={getBusyBlocks()}
-                            freeAfter={currentStatus?.free_after?.toString() || null}
-                            timezone="IST"
-                        />
-                    </div>
+            {/* 2x2 Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+                {/* Voice Status Card - Top Left (Larger) */}
+                <div className="dashboard-card">
+                    <h2 className="text-2xl font-serif text-gray-800 mb-6 italic">Tell me about your day</h2>
+                    <SpeakYourDayCard
+                        onRecordingComplete={handleRecordingComplete}
+                        transcript={transcript}
+                        isTranscribing={isTranscribing}
+                        onConfirmTranscript={handleConfirmTranscript}
+                        onCancelTranscript={handleCancelTranscript}
+                    />
                 </div>
 
-                {/* Right Column - 4 columns */}
-                <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                    {/* Next Up Card - Calendar accent */}
-                    <div className="card-widget border-l-4 border-l-[#F97316]">
-                        <div className="flex items-center gap-2 mb-5">
-                            <svg className="w-4 h-4 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {/* Right Column - Top */}
+                <div className="flex flex-col gap-6">
+                    {/* Next Up Card */}
+                    <div className="dashboard-card">
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Next Up</h2>
+                            <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Next Up</h2>
                         </div>
                         <NextUpCard meeting={nextMeeting} isLoading={isLoadingMeeting} />
                     </div>
 
-                    {/* Quick Actions Card - Arrow accent */}
-                    <div className="card-widget">
-                        <div className="flex items-center gap-2 mb-5">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    {/* Shortcuts Card */}
+                    <div className="dashboard-card">
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-[#FF8C42]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                             </svg>
-                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Shortcuts</h2>
+                            <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Shortcuts</h2>
                         </div>
                         <QuickActionsCard onScheduleGroupMeeting={() => setShowGroupModal(true)} />
                     </div>
+                </div>
 
-                    {/* Team Summary - Simple inline */}
-                    <div className="card-widget bg-gray-50/50">
-                        <div className="flex items-center gap-2 mb-5">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Team</h2>
+                {/* Status Today Card - Bottom Left */}
+                <div className="dashboard-card">
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-3 h-3 rounded-full bg-green-500" />
+                        <h2 className="text-lg font-semibold text-gray-900">Status Today</h2>
+                    </div>
+                    <StatusTodayCard
+                        statusColor={getStatusColor()}
+                        busyBlocks={getBusyBlocks()}
+                        freeAfter={currentStatus?.free_after?.toString() || null}
+                        timezone="IST"
+                    />
+                </div>
+
+                {/* Team Card - Bottom Right */}
+                <div className="dashboard-card">
+                    <div className="flex items-center gap-2 mb-4">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Team</h2>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 text-sm">Members</span>
+                            <span className="font-semibold text-gray-900">{teamMembers.length}</span>
                         </div>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-gray-500 text-sm">Members</span>
-                                <span className="font-semibold text-gray-900">{teamMembers.length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-gray-500 text-sm flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                                    Available
-                                </span>
-                                <span className="font-semibold text-green-600">
-                                    {teamMembers.filter(m => m.status?.status_color === 'green').length}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-gray-500 text-sm flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                                    Busy
-                                </span>
-                                <span className="font-semibold text-amber-500">
-                                    {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
-                                </span>
-                            </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 text-sm flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500" />
+                                Available
+                            </span>
+                            <span className="font-semibold text-green-600">
+                                {teamMembers.filter(m => m.status?.status_color === 'green').length}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-500 text-sm flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-[#FF8C42]" />
+                                Busy
+                            </span>
+                            <span className="font-semibold text-[#FF8C42]">
+                                {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
+                            </span>
                         </div>
                     </div>
                 </div>

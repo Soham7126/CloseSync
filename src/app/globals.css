@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  /* Background */
-  --background: #ffffff;
-  --background-subtle: #FAFAFA;
+  /* Background - Warm beige/cream */
+  --background: #FFF8F0;
+  --background-subtle: #FFF5EB;
   --foreground: #1F2937;
 
   /* Primary Orange Palette */
-  --primary: #F97316;
-  --primary-hover: #EA580C;
+  --primary: #FF8C42;
+  --primary-hover: #F97316;
   --primary-light: #FFF7ED;
   --primary-lighter: #FFFBF7;
   --primary-foreground: #ffffff;
@@ -36,6 +36,10 @@
   --card-shadow-lg: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
   --card-radius: 16px;
   --card-radius-lg: 20px;
+
+  /* Dashboard card colors */
+  --card-bg: #FFFBF7;
+  --card-border: #FFE8D4;
 }
 
 @theme inline {
@@ -78,59 +82,60 @@ a {
 
 /* ===== DESIGN SYSTEM UTILITIES ===== */
 
-/* Card Styles - Lighter, more breathable */
+/* Card Styles - Warm cream with subtle shadows */
 .card {
-  background: white;
-  border-radius: var(--card-radius);
-  border: 1px solid var(--border-light);
+  background: var(--card-bg);
+  border-radius: var(--card-radius-lg);
+  border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
   padding: 24px;
 }
 
 .card-subtle {
   background: var(--background-subtle);
-  border-radius: var(--card-radius);
+  border-radius: var(--card-radius-lg);
   padding: 24px;
+}
+
+/* Dashboard card - Unified warm style */
+.dashboard-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 /* Hero card with soft orange accent */
 .card-hero {
-  background: linear-gradient(to bottom, white, var(--primary-lighter));
+  background: var(--card-bg);
   border-radius: var(--card-radius-lg);
-  border: 1px solid rgba(249, 115, 22, 0.1);
-  box-shadow: var(--card-shadow-md), 0 0 0 1px rgba(249, 115, 22, 0.03);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 28px;
   position: relative;
 }
 
-.card-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60%;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  border-radius: 0 0 4px 4px;
-  opacity: 0.4;
-}
-
 /* Status card with tint */
 .card-status {
-  background: linear-gradient(135deg, white 70%, var(--status-available-light));
-  border-radius: var(--card-radius);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--card-shadow);
+  background: var(--card-bg);
+  border-radius: var(--card-radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 24px;
 }
 
 /* Right column cards - lighter feel */
 .card-widget {
-  background: white;
-  border-radius: var(--card-radius);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--card-shadow);
+  background: var(--card-bg);
+  border-radius: var(--card-radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 20px;
 }
 
