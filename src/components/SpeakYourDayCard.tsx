@@ -141,9 +141,9 @@ export default function SpeakYourDayCard({
     };
 
     return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center justify-center min-h-80">
             {/* Microphone Button */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-3">
                 <button
                     onClick={handleMicClick}
                     disabled={isTranscribing || isEditing}

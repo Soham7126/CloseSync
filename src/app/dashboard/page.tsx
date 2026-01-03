@@ -331,53 +331,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Status Today Card - Bottom Left */}
-                <div className="dashboard-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="w-3 h-3 rounded-full bg-green-500" />
-                        <h2 className="text-lg font-semibold text-gray-900">Status Today</h2>
-                    </div>
-                    <StatusTodayCard
-                        statusColor={getStatusColor()}
-                        busyBlocks={getBusyBlocks()}
-                        freeAfter={currentStatus?.free_after?.toString() || null}
-                        timezone="IST"
-                    />
-                </div>
-
-                {/* Team Card - Bottom Right */}
-                <div className="dashboard-card">
-                    <div className="flex items-center gap-2 mb-4">
-                        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Team</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-500 text-sm">Members</span>
-                            <span className="font-semibold text-gray-900">{teamMembers.length}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-500 text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-green-500" />
-                                Available
-                            </span>
-                            <span className="font-semibold text-green-600">
-                                {teamMembers.filter(m => m.status?.status_color === 'green').length}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-500 text-sm flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-[#FF8C42]" />
-                                Busy
-                            </span>
-                            <span className="font-semibold text-[#FF8C42]">
-                                {teamMembers.filter(m => m.status?.status_color === 'yellow' || m.status?.status_color === 'red').length}
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {/* Voice Input Modal */}

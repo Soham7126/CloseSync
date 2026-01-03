@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 interface BusyBlock {
     start: string;
     end: string;
@@ -19,6 +21,15 @@ export default function StatusTodayCard({
     freeAfter,
     timezone = 'IST',
 }: StatusTodayCardProps) {
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(timer);
+    }, []);
     const getStatusText = () => {
         switch (statusColor) {
             case 'green':
@@ -78,12 +89,95 @@ export default function StatusTodayCard({
         return `${h12}:${minutes} ${ampm}`;
     };
 
+    // Calculate current time position as percentage of 24 hours
+    const getCurrentTimePosition = () => {
+        const hours = currentTime.getHours();
+        const minutes = currentTime.getMinutes();
+        return ((hours * 60 + minutes) / (24 * 60)) * 100;
+    };
+
+    // Convert time string (HH:MM) to percentage position
+    const timeToPosition = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return ((hours * 60 + minutes) / (24 * 60)) * 100;
+    };
+
+    // Format current time for display
+    const formatCurrentTime = () => {
+        const hours = currentTime.getHours();
+        const minutes = currentTime.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    };
+
     return (
         <div>
             {/* Status Indicator */}
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${getStatusBgColor()} mb-8`}>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${getStatusBgColor()} mb-6`}>
                 <div className={`w-2.5 h-2.5 rounded-full ${getStatusDotColor()}`} />
                 <span className="text-gray-800 font-medium text-sm">{getStatusText()}</span>
+            </div>
+
+            {/* 24-Hour Timeline Calendar */}
+            <div className="mb-6">
+                {/* Current time label */}
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-medium text-blue-600">{formatCurrentTime()}</span>
+                </div>
+
+                {/* Timeline bar */}
+                <div className="relative">
+                    {/* Time labels */}
+                    <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                        <span>12 AM</span>
+                        <span>6 AM</span>
+                        <span>12 PM</span>
+                        <span>6 PM</span>
+                        <span>12 AM</span>
+                    </div>
+
+                    {/* Timeline track */}
+                    <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                        {/* Busy blocks on timeline */}
+                        {busyBlocks.map((block, index) => {
+                            const startPos = timeToPosition(block.start);
+                            const endPos = timeToPosition(block.end);
+                            const width = endPos - startPos;
+                            return (
+                                <div
+                                    key={index}
+                                    className="absolute top-0 h-full bg-blue-400 opacity-80"
+                                    style={{
+                                        left: `${startPos}%`,
+                                        width: `${width}%`,
+                                    }}
+                                    title={`Busy: ${formatTimeRange(block.start, block.end)}`}
+                                />
+                            );
+                        })}
+
+                        {/* Current time indicator line */}
+                        <div
+                            className="absolute top-0 h-full w-0.5 bg-blue-600 z-10"
+                            style={{ left: `${getCurrentTimePosition()}%` }}
+                        >
+                            {/* Indicator dot at top */}
+                            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-600 rounded-full" />
+                        </div>
+                    </div>
+
+                    {/* Hour markers */}
+                    <div className="absolute top-6 left-0 right-0 h-8 flex">
+                        {[...Array(24)].map((_, i) => (
+                            <div
+                                key={i}
+                                className="flex-1 border-l border-gray-200 first:border-l-0"
+                                style={{ opacity: i % 6 === 0 ? 1 : 0.3 }}
+                            />
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Busy Blocks */}
