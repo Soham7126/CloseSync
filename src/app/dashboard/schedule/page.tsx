@@ -996,53 +996,68 @@ export default function SchedulePage() {
     };
 
     return (
-        <div className="flex h-[calc(100vh-80px)] bg-[#F5F5F5] -m-6 overflow-hidden">
+        <div className="flex h-[calc(100vh-80px)] bg-[#F8FAFC] -m-6 overflow-hidden font-[Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif]">
+            {/* Custom Scrollbar Styles */}
+            <style jsx global>{`
+                .calendar-scroll::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                }
+                .calendar-scroll::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .calendar-scroll::-webkit-scrollbar-thumb {
+                    background: #D1D5DB;
+                    border-radius: 3px;
+                }
+                .calendar-scroll::-webkit-scrollbar-thumb:hover {
+                    background: #9CA3AF;
+                }
+            `}</style>
+
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-hidden">
                 {/* Top Header */}
-                <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+                <header className="flex items-center justify-between px-8 py-5 bg-white border-b border-[#EEF2F7]">
                     {/* Month Navigator */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
                         <button
                             onClick={() => handleWeekChange('prev')}
-                            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                            className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
                         >
-                            <ChevronLeft className="w-5 h-5 text-gray-400" />
+                            <ChevronLeft className="w-5 h-5 text-[#6B7280]" />
                         </button>
-                        <span className="text-base font-medium text-gray-800 min-w-[140px] text-center">
+                        <span className="text-lg font-semibold text-[#1F2937] min-w-[160px] text-center tracking-[-0.2px]">
                             {monthYearDisplay}
                         </span>
                         <button
                             onClick={() => handleWeekChange('next')}
-                            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                            className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200"
                         >
-                            <ChevronRight className="w-5 h-5 text-gray-400" />
+                            <ChevronRight className="w-5 h-5 text-[#6B7280]" />
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         {/* Refresh Button */}
                         <button
                             onClick={fetchEvents}
                             disabled={loading}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+                            className="p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200"
                             title="Refresh events"
                         >
-                            <RefreshCw className={`w-5 h-5 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-5 h-5 text-[#6B7280] ${loading ? 'animate-spin' : ''}`} />
                         </button>
 
                         {/* Notification Bell */}
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
-                            <svg className="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
+                        <button className="p-2.5 hover:bg-gray-100 rounded-full transition-all duration-200">
+                            <Bell className="w-5 h-5 text-[#6B7280]" />
                         </button>
 
                         {/* Today Button */}
                         <button
                             onClick={goToToday}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-5 py-2.5 text-sm font-medium text-[#374151] bg-white border border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
                         >
                             Today
                         </button>
@@ -1072,12 +1087,12 @@ export default function SchedulePage() {
                 )}
 
                 {/* Calendar Grid */}
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto calendar-scroll">
                     <div className="min-w-[800px]">
                         {/* Day Headers */}
-                        <div className="grid bg-white border-b border-gray-200 sticky top-0 z-10" style={{ gridTemplateColumns: `70px repeat(${daysDisplayed}, 1fr)` }}>
+                        <div className="grid bg-white border-b border-[#EEF2F7] sticky top-0 z-10" style={{ gridTemplateColumns: `72px repeat(${daysDisplayed}, 1fr)` }}>
                             {/* Timezone */}
-                            <div className="px-2 py-3 text-xs text-gray-400 text-center border-r border-gray-200">
+                            <div className="px-2 py-4 text-[11px] text-[#9CA3AF] text-center border-r border-[#EEF2F7] font-medium">
                                 {Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ') || 'Local'}
                             </div>
 
@@ -1090,12 +1105,16 @@ export default function SchedulePage() {
                                 return (
                                     <div
                                         key={index}
-                                        className={`px-4 py-3 text-center border-r border-gray-200 ${isToday ? 'bg-orange-50' : ''}`}
+                                        className={`relative px-4 py-4 text-center border-r border-[#EEF2F7] ${isToday ? 'bg-[#FFF7ED]' : ''}`}
                                     >
-                                        <div className={`text-2xl font-bold ${isToday ? 'text-orange-500' : 'text-gray-900'}`}>
+                                        {/* Today indicator border */}
+                                        {isToday && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FB923C]" />
+                                        )}
+                                        <div className={`text-[22px] font-semibold leading-tight ${isToday ? 'text-[#FB923C]' : 'text-[#111827]'}`}>
                                             {dayNum.toString().padStart(2, '0')}
                                         </div>
-                                        <div className={`text-xs font-medium ${isToday ? 'text-orange-500' : 'text-gray-500'}`}>
+                                        <div className={`text-xs font-medium mt-1 ${isToday ? 'text-[#FB923C]' : 'text-[#6B7280]'}`}>
                                             {dayName}
                                         </div>
                                     </div>
@@ -1104,13 +1123,16 @@ export default function SchedulePage() {
                         </div>
 
                         {/* All Day Row */}
-                        <div className="grid bg-white border-b border-gray-200" style={{ gridTemplateColumns: `70px repeat(${daysDisplayed}, 1fr)` }}>
-                            <div className="px-2 py-2 text-xs text-gray-400 text-center border-r border-gray-200">
+                        <div className="grid bg-white border-b border-[#EEF2F7]" style={{ gridTemplateColumns: `72px repeat(${daysDisplayed}, 1fr)` }}>
+                            <div className="px-2 py-2.5 text-[11px] text-[#9CA3AF] text-center border-r border-[#EEF2F7] font-medium">
                                 All Day
                             </div>
-                            {weekDays.map((_, index) => (
-                                <div key={index} className="px-2 py-2 border-r border-gray-200 min-h-[40px]" />
-                            ))}
+                            {weekDays.map((day, index) => {
+                                const isToday = day.toDateString() === today.toDateString();
+                                return (
+                                    <div key={index} className={`px-2 py-2.5 border-r border-[#EEF2F7] min-h-[44px] ${isToday ? 'bg-[#FFF7ED]/50' : ''}`} />
+                                );
+                            })}
                         </div>
 
                         {/* Time Grid */}
@@ -1121,28 +1143,28 @@ export default function SchedulePage() {
                                 style={{ top: `${getCurrentTimePosition()}px` }}
                             >
                                 {/* Time label on the left */}
-                                <div className="w-[70px] flex justify-end pr-2">
-                                    <span className="bg-blue-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded">
+                                <div className="w-[72px] flex justify-end pr-2">
+                                    <span className="bg-[#2563EB] text-white text-[10px] font-semibold px-2 py-0.5 rounded">
                                         {formatCurrentTimeLabel()}
                                     </span>
                                 </div>
                                 {/* Horizontal line with dots */}
                                 <div className="flex-1 flex items-center">
                                     {/* Left dot */}
-                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full flex-shrink-0" />
+                                    <div className="w-2.5 h-2.5 bg-[#2563EB] rounded-full flex-shrink-0" />
                                     {/* Line */}
-                                    <div className="flex-1 h-0.5 bg-blue-600" />
+                                    <div className="flex-1 h-0.5 bg-[#2563EB]" />
                                     {/* Right dot */}
-                                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full flex-shrink-0" />
+                                    <div className="w-2.5 h-2.5 bg-[#2563EB] rounded-full flex-shrink-0" />
                                 </div>
                             </div>
 
-                            <div className="grid" style={{ gridTemplateColumns: `70px repeat(${daysDisplayed}, 1fr)` }}>
+                            <div className="grid" style={{ gridTemplateColumns: `72px repeat(${daysDisplayed}, 1fr)` }}>
                                 {/* Time Labels Column */}
-                                <div className="border-r border-gray-200 bg-white">
+                                <div className="border-r border-[#EEF2F7] bg-white">
                                     {timeSlots.map((time, index) => (
-                                        <div key={index} className="relative border-b border-gray-200" style={{ height: `${PIXELS_PER_HOUR}px` }}>
-                                            <span className="absolute -top-2.5 right-3 text-xs text-gray-400 font-medium bg-white px-1">
+                                        <div key={index} className="relative border-b border-[#EEF2F7]" style={{ height: `${PIXELS_PER_HOUR}px` }}>
+                                            <span className="absolute -top-2.5 right-3 text-[11px] text-[#9CA3AF] font-normal bg-white px-1 tabular-nums">
                                                 {time}
                                             </span>
                                         </div>
@@ -1157,16 +1179,25 @@ export default function SchedulePage() {
                                     return (
                                         <div
                                             key={dayIndex}
-                                            className={`relative border-r border-gray-200 ${isToday ? 'bg-orange-50/50' : ''}`}
+                                            className={`relative border-r border-[#EEF2F7] ${isToday ? 'bg-[#FFF7ED]/40' : ''}`}
                                         >
                                             {/* Hour Lines */}
                                             {timeSlots.map((_, index) => (
                                                 <div
                                                     key={index}
-                                                    className="border-b border-gray-200"
+                                                    className="border-b border-[#EEF2F7] hover:bg-gray-50/50 transition-colors"
                                                     style={{ height: `${PIXELS_PER_HOUR}px` }}
                                                 />
                                             ))}
+
+                                            {/* Empty State - shown when no events for the day */}
+                                            {dayEvents.length === 0 && (
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                    <span className="text-[11px] text-[#D1D5DB] font-normal opacity-0 hover:opacity-100 transition-opacity">
+                                                        No events
+                                                    </span>
+                                                </div>
+                                            )}
 
                                             {/* Events */}
                                             {dayEvents.map((event) => (
