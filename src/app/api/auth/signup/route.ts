@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         }
 
         let teamId: string | null = null;
+        let userRole: 'super_admin' | 'admin' | 'member' = 'member';
 
         // Handle team creation or joining
         if (teamName) {
@@ -74,6 +75,8 @@ export async function POST(request: NextRequest) {
                 // Don't fail signup, just log the error
             } else {
                 teamId = newTeam.id;
+                // Team creator becomes super_admin
+                userRole = 'super_admin';
             }
         } else if (inviteCode) {
             // Find team by invite code
@@ -91,14 +94,17 @@ export async function POST(request: NextRequest) {
             }
 
             teamId = existingTeam.id;
+            // Users joining via invite code become members
+            userRole = 'member';
         }
 
-        // Create user profile
+        // Create user profile with role
         const { error: profileError } = await supabaseAdmin.from('users').insert({
             id: authData.user.id,
             email,
             name,
             team_id: teamId,
+            role: userRole,
         });
 
         if (profileError) {

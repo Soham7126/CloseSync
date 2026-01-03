@@ -287,16 +287,63 @@ function SettingsContent() {
                 );
 
             case 'team':
+                const isSuperAdmin = profile?.role === 'super_admin';
+                const getRoleBadgeColor = (role: string) => {
+                    switch (role) {
+                        case 'super_admin':
+                            return 'bg-purple-100 text-purple-700';
+                        case 'admin':
+                            return 'bg-blue-100 text-blue-700';
+                        default:
+                            return 'bg-gray-100 text-gray-700';
+                    }
+                };
+                const formatRole = (role: string) => {
+                    switch (role) {
+                        case 'super_admin':
+                            return 'Super Admin';
+                        case 'admin':
+                            return 'Admin';
+                        default:
+                            return 'Member';
+                    }
+                };
+
                 return (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-[#1F2937]">Team Management</h3>
-                            <button
-                                onClick={() => setShowInviteModal(true)}
-                                className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm font-medium hover:bg-[#5558E3] transition-colors"
-                            >
-                                Invite Members
-                            </button>
+                            {isSuperAdmin && (
+                                <button
+                                    onClick={() => setShowInviteModal(true)}
+                                    className="px-4 py-2 bg-[#6366F1] text-white rounded-lg text-sm font-medium hover:bg-[#5558E3] transition-colors flex items-center gap-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    Invite Members
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Your Role Info */}
+                        <div className="p-4 bg-gradient-to-r from-[#6366F1]/10 to-[#8B5CF6]/10 rounded-xl border border-[#6366F1]/20">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-[#6366F1]/20">
+                                    <svg className="w-5 h-5 text-[#6366F1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-[#6B7280]">Your Role</p>
+                                    <p className="font-semibold text-[#1F2937]">{formatRole(profile?.role || 'member')}</p>
+                                </div>
+                            </div>
+                            {isSuperAdmin && (
+                                <p className="mt-3 text-xs text-[#6B7280]">
+                                    As a Super Admin, you can invite new members, manage roles, and configure team settings.
+                                </p>
+                            )}
                         </div>
 
                         {team && (
@@ -321,15 +368,25 @@ function SettingsContent() {
                                                 {getInitials(member.name)}
                                             </div>
                                             <div>
-                                                <p className="text-[#1F2937] font-medium">{member.name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-[#1F2937] font-medium">{member.name}</p>
+                                                    {member.id === user?.id && (
+                                                        <span className="text-xs text-[#6B7280]">(You)</span>
+                                                    )}
+                                                </div>
                                                 <p className="text-sm text-[#6B7280]">{member.email}</p>
                                             </div>
                                         </div>
-                                        {member.id !== user?.id && (
-                                            <button className="text-sm text-red-600 hover:text-red-700">
-                                                Remove
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role || 'member')}`}>
+                                                {formatRole(member.role || 'member')}
+                                            </span>
+                                            {isSuperAdmin && member.id !== user?.id && (
+                                                <button className="text-sm text-red-600 hover:text-red-700">
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

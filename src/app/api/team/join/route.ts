@@ -54,10 +54,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Update user's team
+        // Update user's team with member role (users joining via code get member role)
         const { error: updateError } = await supabaseAdmin
             .from('users')
-            .update({ team_id: team.id })
+            .update({
+                team_id: team.id,
+                role: 'member'
+            })
             .eq('id', userId);
 
         if (updateError) {

@@ -10,12 +10,28 @@ export interface Team {
     created_at: string;
 }
 
+export type UserRole = 'super_admin' | 'admin' | 'member';
+
 export interface User {
     id: string;
     email: string;
     name: string;
     team_id: string | null;
     avatar_url: string | null;
+    role: UserRole;
+    created_at: string;
+}
+
+export interface TeamInvitation {
+    id: string;
+    team_id: string;
+    email: string;
+    role: 'admin' | 'member';
+    token: string;
+    invited_by: string;
+    status: 'pending' | 'accepted' | 'expired' | 'cancelled';
+    expires_at: string;
+    accepted_at: string | null;
     created_at: string;
 }
 
@@ -62,13 +78,18 @@ export interface Database {
             };
             users: {
                 Row: User;
-                Insert: Omit<User, 'created_at'> & { created_at?: string };
+                Insert: Omit<User, 'created_at'> & { created_at?: string; role?: UserRole };
                 Update: Partial<Omit<User, 'id'>>;
             };
             user_status: {
                 Row: UserStatus;
                 Insert: Omit<UserStatus, 'id' | 'last_updated'> & { id?: string; last_updated?: string };
                 Update: Partial<Omit<UserStatus, 'id' | 'user_id'>>;
+            };
+            team_invitations: {
+                Row: TeamInvitation;
+                Insert: Omit<TeamInvitation, 'id' | 'created_at' | 'accepted_at'> & { id?: string; created_at?: string; accepted_at?: string | null };
+                Update: Partial<Omit<TeamInvitation, 'id' | 'team_id' | 'token'>>;
             };
         };
         Views: {
