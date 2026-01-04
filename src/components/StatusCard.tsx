@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { User, UserStatus, BusyBlock } from '@/lib/supabase';
 import type { SaveState } from '@/hooks/useSaveStatus';
+import { Clock, Calendar, Zap } from 'lucide-react';
 
 interface StatusCardProps {
     user: User;
@@ -12,19 +13,20 @@ interface StatusCardProps {
     saveState?: SaveState;
 }
 
-// Avatar background colors
-const avatarColors = [
-    'bg-[#F97316]',
-    'bg-[#3B82F6]',
-    'bg-[#8B5CF6]',
-    'bg-[#EC4899]',
-    'bg-[#10B981]',
-    'bg-[#06B6D4]',
+const avatarGradients = [
+    'from-orange-400 to-rose-400',
+    'from-blue-400 to-indigo-500',
+    'from-violet-400 to-purple-500',
+    'from-pink-400 to-rose-500',
+    'from-emerald-400 to-teal-500',
+    'from-cyan-400 to-blue-500',
+    'from-amber-400 to-orange-500',
+    'from-fuchsia-400 to-pink-500',
 ];
 
-function getAvatarColor(name: string): string {
+function getAvatarGradient(name: string): string {
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return avatarColors[hash % avatarColors.length];
+    return avatarGradients[hash % avatarGradients.length];
 }
 
 export default function StatusCard({
@@ -44,42 +46,44 @@ export default function StatusCard({
         }
     }, [isUpdating]);
 
-    const getStatusDot = () => {
-        if (!status?.status_color) return 'bg-[#D1D5DB]';
-        switch (status.status_color) {
-            case 'green': return 'bg-[#10B981]';
-            case 'yellow': return 'bg-[#F97316]';
-            case 'red': return 'bg-[#EF4444]';
-            default: return 'bg-[#D1D5DB]';
+    const getStatusConfig = () => {
+        if (!status?.status_color) {
+            return {
+                dot: 'bg-slate-300',
+                badge: 'bg-slate-100 text-slate-600',
+                text: 'No status',
+                border: 'border-slate-200',
+            };
         }
-    };
-
-    const getStatusText = () => {
-        if (!status) return 'No status';
-        if (status.blockers && status.blockers.length > 0) return 'Blocked';
-        if (status.status_color === 'red') return 'Busy all day';
-        if (status.status_color === 'yellow') return 'Busy now';
-        if (status.status_color === 'green') return 'Available now';
-        return 'Available';
-    };
-
-    const getStatusBadgeColor = () => {
-        if (!status?.status_color) return 'bg-[#E5E7EB]';
         switch (status.status_color) {
-            case 'green': return 'bg-[#DCFCE7]';
-            case 'yellow': return 'bg-[#FFF7ED]';
-            case 'red': return 'bg-[#FEE2E2]';
-            default: return 'bg-[#E5E7EB]';
-        }
-    };
-
-    const getStatusTextColor = () => {
-        if (!status?.status_color) return 'text-[#6B7280]';
-        switch (status.status_color) {
-            case 'green': return 'text-[#047857]';
-            case 'yellow': return 'text-[#92400E]';
-            case 'red': return 'text-[#7F1D1D]';
-            default: return 'text-[#6B7280]';
+            case 'green':
+                return {
+                    dot: 'bg-emerald-500',
+                    badge: 'bg-emerald-50 text-emerald-700',
+                    text: 'Available now',
+                    border: 'border-emerald-200',
+                };
+            case 'yellow':
+                return {
+                    dot: 'bg-orange-500',
+                    badge: 'bg-orange-50 text-orange-700',
+                    text: status.blockers?.length ? 'Blocked' : 'Busy now',
+                    border: 'border-orange-200',
+                };
+            case 'red':
+                return {
+                    dot: 'bg-red-500',
+                    badge: 'bg-red-50 text-red-700',
+                    text: 'Away',
+                    border: 'border-red-200',
+                };
+            default:
+                return {
+                    dot: 'bg-slate-300',
+                    badge: 'bg-slate-100 text-slate-600',
+                    text: 'Unknown',
+                    border: 'border-slate-200',
+                };
         }
     };
 
@@ -95,7 +99,7 @@ export default function StatusCard({
     const formatTime = (time: string) => {
         if (!time) return '';
         const [hours, minutes] = time.split(':');
-        let hour = parseInt(hours);
+        const hour = parseInt(hours);
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour % 12 || 12;
         return `${displayHour}:${minutes} ${ampm}`;
@@ -109,8 +113,8 @@ export default function StatusCard({
         const diffHours = Math.floor(diffMins / 60);
 
         if (diffMins < 1) return 'just now';
-        if (diffMins < 60) return `${diffMins} min ago`;
-        if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
         return '1d ago';
     };
 
@@ -131,7 +135,10 @@ export default function StatusCard({
         return null;
     };
 
-    const avatarColor = getAvatarColor(user.name);
+    const statusConfig = getStatusConfig();
+    const avatarGradient = getAvatarGradient(user.name);
+    const mainTask = getMainTask();
+    const freeTimeMessage = getFreeTimeMessage();
 
     const handleCardClick = () => {
         if (onQuickSync) {
@@ -143,91 +150,119 @@ export default function StatusCard({
         <div
             onClick={handleCardClick}
             className={`
-                relative bg-white border border-[#E5E7EB] rounded-2xl
-                transition-all duration-300 overflow-hidden flex flex-col h-full
-                shadow-[0_1px_3px_rgba(0,0,0,0.06)]
-                hover:border-[#F97316] hover:shadow-[0_4px_12px_rgba(249,115,22,0.12)]
+                group relative bg-white rounded-2xl border transition-all duration-300
+                ${statusConfig.border}
                 ${onQuickSync ? 'cursor-pointer' : ''}
-                ${showPulse ? 'ring-2 ring-[#F97316]/30' : ''}
-                ${saveState === 'saving' ? 'ring-2 ring-[#F97316]/30' : ''}
-                ${saveState === 'success' ? 'ring-2 ring-[#10B981]/30' : ''}
-                ${saveState === 'error' ? 'ring-2 ring-[#EF4444]/30' : ''}
+                ${showPulse ? 'ring-2 ring-orange-400/40 ring-offset-2' : ''}
+                ${saveState === 'saving' ? 'ring-2 ring-orange-400/40' : ''}
+                ${saveState === 'success' ? 'ring-2 ring-emerald-400/40' : ''}
+                ${saveState === 'error' ? 'ring-2 ring-red-400/40' : ''}
+                hover:shadow-xl hover:shadow-slate-200/50 hover:border-orange-300 hover:-translate-y-1
             `}
         >
-            <div className="p-5 flex-1 flex flex-col">
-                {/* Header: Avatar + Name + Status Badge */}
-                <div className="flex items-start gap-4 mb-4">
-                    {/* Avatar */}
-                    <div className={`w-12 h-12 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 shadow-sm`}>
+            {/* Card Content */}
+            <div className="p-7">
+                {/* Header: Avatar + Info */}
+                <div className="flex items-start gap-5 mb-6">
+                    {/* Avatar with gradient */}
+                    <div className={`
+                        relative w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarGradient}
+                        flex items-center justify-center text-white font-bold text-lg
+                        shadow-lg shadow-slate-200/50 flex-shrink-0
+                    `}>
                         {getInitials(user.name)}
+                        {/* Status indicator dot */}
+                        <div className={`
+                            absolute -bottom-1 -right-1 w-5 h-5 rounded-full ${statusConfig.dot}
+                            border-[3px] border-white shadow-sm
+                        `} />
                     </div>
 
-                    {/* Name + Status */}
-                    <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-[#1F2937] truncate leading-tight">
+                    {/* Name + Status Badge */}
+                    <div className="flex-1 min-w-0 pt-1">
+                        <h3 className="text-lg font-semibold text-slate-900 truncate mb-2">
                             {user.name}
                         </h3>
-
-                        {/* Status Badge - 4px spacing from name */}
-                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mt-1 ${getStatusBadgeColor()}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${getStatusDot()}`} />
-                            <span className={`text-xs font-medium ${getStatusTextColor()}`}>
-                                {getStatusText()}
-                            </span>
+                        <div className={`
+                            inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold
+                            ${statusConfig.badge}
+                        `}>
+                            <div className={`w-2 h-2 rounded-full ${statusConfig.dot}`} />
+                            {statusConfig.text}
                         </div>
                     </div>
+
+                    {/* Quick Sync Button (visible on hover) */}
+                    {onQuickSync && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onQuickSync(user.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all"
+                        >
+                            <Zap className="w-3.5 h-3.5" />
+                            Sync
+                        </button>
+                    )}
                 </div>
 
-                {/* Main Task / Status Message - 16px spacing */}
-                <div className="mb-4 min-h-[2rem]">
-                    {getMainTask() ? (
-                        <p className="text-sm leading-relaxed text-[#374151] line-clamp-2">
-                            {getMainTask()}
+                {/* Task / Status Message */}
+                <div className="mb-6 min-h-[3rem]">
+                    {mainTask ? (
+                        <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
+                            {mainTask}
                         </p>
                     ) : (
-                        <p className="text-xs text-[#9CA3AF] italic">
-                            No status update provided
+                        <p className="text-sm text-slate-400 italic">
+                            No current task set
                         </p>
                     )}
                 </div>
 
-                {/* Busy Blocks - Event rows with better spacing */}
-                <div className="space-y-2 mb-auto">
-                    {status?.busy_blocks && status.busy_blocks.length > 0 ? (
-                        status.busy_blocks.slice(0, 2).map((block: BusyBlock, index: number) => (
+                {/* Busy Blocks */}
+                {status?.busy_blocks && status.busy_blocks.length > 0 && (
+                    <div className="space-y-3 mb-6">
+                        {status.busy_blocks.slice(0, 2).map((block: BusyBlock, index: number) => (
                             <div
                                 key={index}
-                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#FFF7ED] border border-[#FED7AA] min-h-[44px] transition-all duration-200"
+                                className="flex items-center gap-4 px-4 py-3.5 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100"
                             >
-                                <svg className="w-4 h-4 text-[#F97316] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white border border-orange-100 shadow-sm">
+                                    <Calendar className="w-5 h-5 text-orange-500" />
+                                </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-[#92400E] truncate">
+                                    <p className="text-sm font-medium text-slate-800 truncate">
                                         {block.label}
                                     </p>
-                                    <p className="text-[11px] text-[#B45309]">
+                                    <p className="text-xs text-orange-600 mt-0.5">
                                         {formatTime(block.start)}
+                                        {block.end && ` - ${formatTime(block.end)}`}
                                     </p>
                                 </div>
                             </div>
-                        ))
-                    ) : null}
-                </div>
+                        ))}
+                        {status.busy_blocks.length > 2 && (
+                            <p className="text-xs text-slate-400 text-center">
+                                +{status.busy_blocks.length - 2} more events
+                            </p>
+                        )}
+                    </div>
+                )}
 
-                {/* Footer: Free Time + Last Updated */}
-                <div className="mt-4 pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5 text-[#9CA3AF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-[#6B7280]">
-                            {getFreeTimeMessage() || 'Busy for now'}
+                {/* Footer */}
+                <div className="pt-5 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 text-slate-500">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                            {freeTimeMessage || 'Busy'}
                         </span>
                     </div>
-                    <span className="text-[11px] text-[#9CA3AF]">
-                        {status?.last_updated ? formatLastUpdated(status.last_updated) : ''}
-                    </span>
+                    {status?.last_updated && (
+                        <span className="text-xs text-slate-400">
+                            Updated {formatLastUpdated(status.last_updated)}
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
